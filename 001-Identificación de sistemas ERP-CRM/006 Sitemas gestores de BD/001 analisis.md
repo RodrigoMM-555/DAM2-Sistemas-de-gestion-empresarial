@@ -12,3 +12,6 @@ MongoDB
 Prioridad 3
 Acceso a datos:
 Soluciones personalizadas de gestión de datos
+
+
+Nos quedamos con sqlite para prototipar y ya cambiaremos
