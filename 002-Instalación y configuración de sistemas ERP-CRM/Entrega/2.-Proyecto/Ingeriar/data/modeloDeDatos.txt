@@ -1,0 +1,15 @@
+educandos
+-nombre
+-apellidos
+
+usuarios
+-nombre
+-apellidos
+-email
+-rol
+
+eventos
+-nombre
+-fecha_inicio
+-fecha_final
+-tipo
