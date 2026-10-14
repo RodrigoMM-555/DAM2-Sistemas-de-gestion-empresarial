@@ -1,7 +1,5 @@
--- Activa la comprobación de claves foráneas en esta conexión SQLite.
 PRAGMA foreign_keys = ON;
 
--- Tabla de clientes de la aplicación.
 CREATE TABLE clientes(
     nombre TEXT,
     pais TEXT,
@@ -10,7 +8,6 @@ CREATE TABLE clientes(
     identificador INTEGER PRIMARY KEY AUTOINCREMENT
 );
 
--- Tabla de productos disponibles.
 CREATE TABLE productos(
     nombre TEXT,
     tipo TEXT,
@@ -20,7 +17,6 @@ CREATE TABLE productos(
     identificador INTEGER PRIMARY KEY AUTOINCREMENT
 );
 
--- Tabla de empleados.
 CREATE TABLE empleados(
     nombre TEXT,
     apellidos TEXT,
@@ -30,7 +26,6 @@ CREATE TABLE empleados(
     identificador INTEGER PRIMARY KEY AUTOINCREMENT
 );
 
--- Tabla de proveedores.
 CREATE TABLE proveedores(
     nombre TEXT,
     pais TEXT,
@@ -39,7 +34,6 @@ CREATE TABLE proveedores(
     identificador INTEGER PRIMARY KEY AUTOINCREMENT
 );
 
--- Pedidos realizados por los clientes.
 CREATE TABLE pedidos(
     fecha TEXT,
     estado TEXT,
@@ -49,7 +43,6 @@ CREATE TABLE pedidos(
     FOREIGN KEY(cliente_id) REFERENCES clientes(identificador)
 );
 
--- Líneas que relacionan cada pedido con sus productos.
 CREATE TABLE lineaspedido(
     pedido_id INTEGER,
     producto_id INTEGER,
@@ -60,7 +53,6 @@ CREATE TABLE lineaspedido(
     FOREIGN KEY(producto_id) REFERENCES productos(identificador)
 );
 
--- Componentes almacenados y sus proveedores.
 CREATE TABLE componentes(
     nombre TEXT,
     tipo TEXT,

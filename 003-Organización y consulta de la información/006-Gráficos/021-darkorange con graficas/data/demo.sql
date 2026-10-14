@@ -1,4 +1,3 @@
--- Datos de demostración para la tabla de clientes.
 INSERT INTO clientes VALUES
 ('Iberia','España','915874100','compras@iberia.es',NULL),
 ('Lufthansa','Alemania','496986799','procurement@lufthansa.de',NULL),
@@ -11,7 +10,6 @@ INSERT INTO clientes VALUES
 ('Delta Airlines','Estados Unidos','14047152600','procurement@delta.com',NULL),
 ('British Airways','Reino Unido','442087385050','orders@ba.com',NULL);
 
--- Datos de demostración para la tabla de productos.
 INSERT INTO productos VALUES
 ('Aquila 100','Regional',89000000,90,3500,NULL),
 ('Aquila 200','Medio alcance',125000000,160,6200,NULL),
@@ -22,7 +20,6 @@ INSERT INTO productos VALUES
 ('Falcon Cargo 200','Carga',175000000,2,8500,NULL),
 ('Falcon Cargo 400','Carga',260000000,2,12500,NULL);
 
--- Datos de demostración para la tabla de empleados.
 INSERT INTO empleados VALUES
 ('Ana','Martínez','Ingeniería','Ingeniera aeronáutica',52000,NULL),
 ('Carlos','García','Ingeniería','Ingeniero de motores',55000,NULL),
@@ -35,7 +32,6 @@ INSERT INTO empleados VALUES
 ('Marta','Vidal','Administración','Contable',38000,NULL),
 ('Pablo','Ortega','I+D','Investigador',57000,NULL);
 
--- Datos de demostración para la tabla de proveedores.
 INSERT INTO proveedores VALUES
 ('AeroEngines Europe','Reino Unido','Motores','ventas@aeroengines.com',NULL),
 ('CompositeTech','España','Materiales compuestos','ventas@compositetech.es',NULL),
@@ -44,7 +40,6 @@ INSERT INTO proveedores VALUES
 ('Cabin Design','Italia','Interiores','info@cabindesign.it',NULL),
 ('AeroMetal','Alemania','Aluminio aeronáutico','sales@aerometal.de',NULL);
 
--- Datos de demostración para la tabla de componentes.
 INSERT INTO componentes VALUES
 ('Motor AX-900','Motor',1,12500000,24,NULL),
 ('Motor AX-1200','Motor',1,18500000,16,NULL),
@@ -56,7 +51,6 @@ INSERT INTO componentes VALUES
 ('Asiento Economy Light','Interior',5,2100,4500,NULL),
 ('Panel aluminio AL-700','Estructura',6,32000,1200,NULL);
 
--- Datos de demostración para la tabla de pedidos.
 INSERT INTO pedidos VALUES
 ('2026-01-15','En fabricación',1,250000000,NULL),
 ('2026-02-03','Confirmado',2,490000000,NULL),
@@ -67,7 +61,6 @@ INSERT INTO pedidos VALUES
 ('2026-06-20','Confirmado',7,680000000,NULL),
 ('2026-07-11','Entregado',8,125000000,NULL);
 
--- Datos de demostración para las líneas de pedido.
 INSERT INTO lineaspedido VALUES
 (1,2,2,125000000,NULL),
 (2,4,2,245000000,NULL),
