@@ -27,6 +27,58 @@ function obtenerColumnas($db, $tabla) {
 
 switch ($ruta) {
 
+    case "configuracion":
+
+        $rutaConfiguracion = __DIR__ . '/../data/config.php';
+
+        if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+            $contenido = file_get_contents($rutaConfiguracion);
+            $configuracion = json_decode($contenido, true);
+
+            if (!is_array($configuracion)) {
+                responder([
+                    "error" => "La configuración no es válida"
+                ]);
+            }
+
+            responder($configuracion);
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $contenido = file_get_contents('php://input');
+            $configuracion = json_decode($contenido, true);
+
+            if (!is_array($configuracion)) {
+                responder([
+                    "error" => "La configuración no es válida"
+                ]);
+            }
+
+            $resultado = file_put_contents(
+                $rutaConfiguracion,
+                json_encode(
+                    $configuracion,
+                    JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
+                )
+            );
+
+            if ($resultado === false) {
+                responder([
+                    "error" => "No se pudo guardar la configuración"
+                ]);
+            }
+
+            responder([
+                "ok" => true
+            ]);
+        }
+
+        responder([
+            "error" => "Método no permitido"
+        ]);
+
+        break;
+
     case "modulos":
 
         responder([
@@ -241,7 +293,6 @@ switch ($ruta) {
         ]);
 
         break;
-
 
     default:
 

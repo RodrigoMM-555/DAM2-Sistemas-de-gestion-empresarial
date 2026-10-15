@@ -1,7 +1,7 @@
 let tablaActual = "";
 
 // Cargar configuración
-fetch("data/config.php")
+fetch("api/superapi.php?ruta=configuracion")
 .then(function(respuesta){
     return respuesta.json();
 })
@@ -14,6 +14,112 @@ fetch("data/config.php")
         datos.color
     );
 });
+
+let botonConfiguracion = document.createElement("button");
+
+botonConfiguracion.textContent = "⚙";
+botonConfiguracion.className = "botonConfiguracion"
+botonConfiguracion.onclick = mostrarConfiguracion;
+
+document.querySelector("header").appendChild(botonConfiguracion);
+
+function mostrarConfiguracion(){
+    fetch("api/superapi.php?ruta=configuracion")
+    .then(function(respuesta){
+        return respuesta.json();
+    })
+    .then(function(configuracion){
+
+        let seccion = document.querySelector("section");
+        seccion.innerHTML = "";
+
+        let titulo = document.createElement("h2");
+        titulo.textContent = "Configuración";
+        seccion.appendChild(titulo);
+
+        let formulario = document.createElement("form");
+        formulario.className = "formulario";
+
+        Object.keys(configuracion).forEach(function(clave){
+            // el grupo es el el imput y el label en conjunto, se crea un grupo por parametro
+            let grupo = document.createElement("div");
+            grupo.className = "campo";
+
+            let label = document.createElement("label");
+            label.textContent = capitalizarTexto(clave);
+
+            let input = document.createElement("input");
+            input.name = clave;
+
+            switch (clave){
+                case "color":
+                    input.type = "color";
+                    break;
+
+                default:
+                    input.type = "text";
+            }
+
+            input.value = configuracion[clave];
+
+            grupo.appendChild(label);
+            grupo.appendChild(input);
+
+            formulario.appendChild(grupo);
+        });
+
+        let guardar = document.createElement("button");
+
+        guardar.type = "submit";
+        guardar.textContent = "Guardar";
+
+        guardar.className = "boton boton-crear";
+
+        let acciones = document.createElement("div");
+        acciones.className = "acciones-formulario";
+        acciones.appendChild(guardar);
+
+        formulario.appendChild(acciones);
+
+        //Guardar la configuracion nueva
+        formulario.onsubmit = function(evento){
+            evento.preventDefault();
+
+            let datos = {};
+
+            new FormData(evento.target).forEach(function(valor, clave){
+                datos[clave] = valor;
+            });
+
+            fetch("api/superapi.php?ruta=configuracion", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(datos)
+            })
+            .then(function(respuesta){
+                return respuesta.json();
+            })
+            .then(function(resultado){
+
+                if(resultado.ok){
+                    document.querySelector("h1").textContent = datos.nombre;
+
+                    document.documentElement.style.setProperty(
+                        "--color_corporativo",
+                        datos.color
+                    );
+
+                    alert("Configuración guardada");
+                }
+            });
+        };
+
+        seccion.appendChild(formulario);
+
+    })
+};
 
 
 // Cargar módulos
