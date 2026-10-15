@@ -1,6 +1,6 @@
 <?php
 
-$db = new SQLite3('../data/ingeriar.db');
+$db = new SQLite3(__DIR__ . '/../data/ingeriar.db');
 $db->exec('PRAGMA foreign_keys = ON');
 
 $ruta = $_GET['ruta'] ?? '';
@@ -184,7 +184,7 @@ switch ($ruta) {
         $sql = "
             UPDATE \"$tabla\"
             SET " . implode(',', $cambios) . "
-            WHERE identificador = ?
+            WHERE id = ?
         ";
 
         $stmt = $db->prepare($sql);
@@ -225,7 +225,7 @@ switch ($ruta) {
 
         $stmt = $db->prepare("
             DELETE FROM \"$tabla\"
-            WHERE identificador = ?
+            WHERE id = ?
         ");
 
         $stmt->bindValue(

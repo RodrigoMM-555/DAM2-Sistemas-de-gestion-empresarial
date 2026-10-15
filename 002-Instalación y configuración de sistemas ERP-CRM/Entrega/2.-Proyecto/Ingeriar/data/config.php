@@ -1,4 +1,4 @@
 {
-	"nombre":"ingeriar | documentacion",
+	"nombre":"Ingeriar | documentacion",
     "color":"darkred"
 }
