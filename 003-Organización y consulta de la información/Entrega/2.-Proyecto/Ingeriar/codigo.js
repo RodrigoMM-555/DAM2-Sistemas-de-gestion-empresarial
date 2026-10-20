@@ -215,19 +215,24 @@ function capitalizarTexto(texto){
 // Cargar una tabla
 function cargarTabla(tabla){
 
+    // Pedimos a la API los registros de la entidad seleccionada.
     fetch(
         "api/superapi.php?ruta=tabla&tabla="
         + encodeURIComponent(tabla)
     )
     .then(function(respuesta){
+        // Convertimos la respuesta de la API de JSON a datos JavaScript.
         return respuesta.json();
     })
     .then(function(datos){
 
+        // Localizamos la zona principal donde se mostrará la tabla.
         let seccion = document.querySelector("section");
 
+        // Eliminamos el contenido anterior antes de cargar la nueva entidad.
         seccion.innerHTML = "";
 
+        // Creamos la cabecera visual con el nombre de la entidad y el botón Nuevo.
         let cabecera = document.createElement("div");
         cabecera.className = "cabecera-tabla";
 
@@ -239,18 +244,22 @@ function cargarTabla(tabla){
         botonCrear.textContent = "+ Nuevo";
         botonCrear.className = "boton boton-crear";
 
+        // Al pulsar Nuevo se abre el formulario para crear un registro.
         botonCrear.onclick = function(){
             mostrarFormulario();
         };
 
+        // Añadimos el título y el botón a la cabecera.
         cabecera.appendChild(titulo);
         cabecera.appendChild(botonCrear);
 
+        // Mostramos la cabecera en la sección.
         seccion.appendChild(cabecera);
 
 
         if(datos.length === 0){
 
+            // Si la entidad no tiene registros, mostramos un mensaje y terminamos.
             let mensaje = document.createElement("p");
 
             mensaje.className = "sin-datos";
@@ -262,94 +271,207 @@ function cargarTabla(tabla){
         }
 
 
+        // Creamos el elemento tabla que contendrá la cabecera y las filas.
         let tablaHTML = document.createElement("table");
 
+        // Obtenemos los nombres de las columnas a partir del primer registro.
+        let columnas = Object.keys(datos[0]);
+
+        // Creamos el contenedor de los controles de búsqueda.
+        let filtros = document.createElement("div");
+        filtros.className = "filtros-tabla";
+
+        // Creamos el selector que permitirá elegir la columna donde buscar.
+        let selectorColumna = document.createElement("select");
+        selectorColumna.className = "selector-columna";
+
+        // Creamos el campo donde el usuario escribirá el texto que quiere buscar.
+        let buscador = document.createElement("input");
+        buscador.type = "search";
+        buscador.placeholder = "Buscar...";
+        buscador.className = "buscador-tabla";
+
+        // Añadimos una opción al selector por cada columna de la entidad.
+        columnas.forEach(function(clave, indice){
+
+            let opcion = document.createElement("option");
+
+            // Guardamos el índice para localizar después la celda correspondiente.
+            opcion.value = indice;
+            opcion.textContent = capitalizarTexto(clave);
+
+            selectorColumna.appendChild(opcion);
+        });
+
+        // Introducimos el selector y el buscador dentro del contenedor de filtros.
+        filtros.appendChild(selectorColumna);
+        filtros.appendChild(buscador);
+
+        // Mostramos los filtros antes de la tabla.
+        seccion.appendChild(filtros);
+
+        // Creamos la cabecera y el cuerpo de la tabla.
         let cabeceraTabla = document.createElement("thead");
         let filaCabecera = document.createElement("tr");
+        let cuerpo = document.createElement("tbody");
 
-        //Obtiene el nombre del dato del json nombre: "Ana" -> obtiene nombre
-        //entonces del objeto 0 obtiene el nombre de cada una de sus propiedades
-        Object.keys(datos[0]).forEach(function(clave){
+        // Creamos una cabecera para cada columna y le añadimos el ordenamiento.
+        columnas.forEach(function(clave, indice){
 
             let th = document.createElement("th");
 
-            th.textContent = capitalizarTexto(clave);
+            th.textContent = capitalizarTexto(clave + "  ↕");
 
             filaCabecera.appendChild(th);
+
+            // Cada columna comienza ordenando de forma ascendente.
+            let ascendente = true;
+
+            // Al pulsar la cabecera se ordenan las filas por esa columna.
+            th.onclick = function(){
+
+                // Convertimos las filas del tbody en un array para poder ordenarlas.
+                let filas = Array.from(
+                    cuerpo.querySelectorAll("tr")
+                );
+
+                // Comparamos el texto de la celda de la columna seleccionada.
+                filas.sort(function(filaA, filaB){
+
+                    let valorA = filaA.children[indice]
+                        .textContent;
+
+                    let valorB = filaB.children[indice]
+                        .textContent;
+
+                    // Alternamos entre orden ascendente y descendente.
+                    if(ascendente){
+                        return valorA.localeCompare(valorB);
+                    }
+
+                    return valorB.localeCompare(valorA);
+                });
+
+                // Volvemos a introducir las filas en el cuerpo ya ordenadas.
+                filas.forEach(function(fila){
+                    cuerpo.appendChild(fila);
+                });
+
+                // La siguiente pulsación ordenará en el sentido contrario.
+                ascendente = !ascendente;
+            };
         });
 
-
+        // La última columna contiene los botones de editar y borrar.
         let thAcciones = document.createElement("th");
         thAcciones.textContent = "Acciones";
 
-        //Añadimos acciones a la lista de elementos de la cabecera de la tabla
+        // Añadimos la columna de acciones a la cabecera.
         filaCabecera.appendChild(thAcciones);
 
-        //Metemos la lista de elementos de la cabecera en la cabecera
+        // Introducimos la fila de cabeceras dentro del thead.
         cabeceraTabla.appendChild(filaCabecera);
 
-        //Metemos la cabecera en la tabla
+        // Introducimos el thead dentro de la tabla.
         tablaHTML.appendChild(cabeceraTabla);
 
-
-        let cuerpo = document.createElement("tbody");
-
-
+        // Creamos una fila de la tabla por cada registro recibido.
         datos.forEach(function(registro){
 
             let fila = document.createElement("tr");
 
-            // sacamos la clave de cada uno de los datos de cada uno de los registros
-            // de esta forma ahcemos como con un array registro[clave]
+            // Creamos una celda por cada campo del registro.
             Object.keys(registro).forEach(function(clave){
 
                 let td = document.createElement("td");
 
+                // Escribimos en la celda el valor del campo actual.
                 td.textContent = registro[clave];
 
                 fila.appendChild(td);
             });
 
-            //Creamos los botones de acciones y los conectamos a sus funciones
+            // Creamos la celda que contendrá los botones de acciones.
             let acciones = document.createElement("td");
 
             acciones.className = "acciones";
 
-            //editar
+            // Creamos el botón para editar este registro.
             let editar = document.createElement("button");
 
             editar.textContent = "Editar";
             editar.className = "boton boton-editar";
 
+            // Abrimos el formulario de edición con los datos del registro.
             editar.onclick = function(){
 
                 mostrarFormulario(registro);
             };
 
-            //borrar
+            // Creamos el botón para borrar este registro.
             let borrar = document.createElement("button");
 
             borrar.textContent = "Borrar";
             borrar.className = "boton boton-borrar";
 
+            // Borramos el registro utilizando su identificador.
             borrar.onclick = function(){
 
                 borrarRegistro(registro.id);
             };
 
-            //añadimos los botones
+            // Añadimos los botones dentro de la celda de acciones.
             acciones.appendChild(editar);
             acciones.appendChild(borrar);
 
+            // Añadimos la celda de acciones al final de la fila.
             fila.appendChild(acciones);
 
+            // Añadimos la fila completa al cuerpo de la tabla.
             cuerpo.appendChild(fila);
         });
 
-
+        // Añadimos el cuerpo a la tabla y la tabla a la sección.
         tablaHTML.appendChild(cuerpo);
 
         seccion.appendChild(tablaHTML);
+
+        // Filtra las filas usando la columna seleccionada y el texto escrito.
+        function filtrar(){
+
+            // Obtenemos el índice de la columna elegida en el selector.
+            let indice = Number(selectorColumna.value);
+
+            // Normalizamos el texto para buscar sin distinguir mayúsculas.
+            let busqueda = buscador.value
+                .toLowerCase()
+                .trim();
+
+            // Revisamos todas las filas del cuerpo de la tabla.
+            cuerpo.querySelectorAll("tr").forEach(function(fila){
+
+                // Solo comparamos la celda de la columna seleccionada.
+                let contenido = fila.children[indice]
+                    .textContent
+                    .toLowerCase();
+
+                // Mostramos la fila si el filtro está vacío o si encuentra coincidencia.
+                if(
+                    busqueda === "" ||
+                    contenido.includes(busqueda)
+                ){
+                    fila.style.display = "";
+                }else{
+                    fila.style.display = "none";
+                }
+            });
+        }
+
+        // Filtramos mientras se escribe en el buscador.
+        buscador.oninput = filtrar;
+
+        // Volvemos a aplicar el filtro al cambiar de columna.
+        selectorColumna.onchange = filtrar;
     });
 }
 

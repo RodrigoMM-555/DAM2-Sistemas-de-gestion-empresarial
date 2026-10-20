@@ -230,6 +230,16 @@ section h2{
 
 /* CABECERA DE TABLA */
 
+.filtros-tabla{
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    margin-bottom: 10px;
+    background: var(--color_corporativo);
+    padding: 10px;
+    border-radius: var(--radio);
+}
+
 .cabecera-tabla{
     display:flex;
 
@@ -278,6 +288,8 @@ table th{
     font-weight:600;
 
     white-space:nowrap;
+
+    cursor: pointer;
 }
 
 
