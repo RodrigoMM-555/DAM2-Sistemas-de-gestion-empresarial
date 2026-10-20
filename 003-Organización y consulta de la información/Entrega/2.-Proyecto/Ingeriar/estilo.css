@@ -240,6 +240,10 @@ section h2{
     border-radius: var(--radio);
 }
 
+.selector-columna{
+    max-width: 100px;
+}
+
 .cabecera-tabla{
     display:flex;
 
