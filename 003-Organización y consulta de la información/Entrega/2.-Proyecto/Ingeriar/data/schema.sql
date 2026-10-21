@@ -15,10 +15,19 @@ CREATE TABLE educandos (
     nombre VARCHAR(100) NOT NULL,
     apellidos VARCHAR(150) NOT NULL,
     dni CHAR(9) NOT NULL UNIQUE,
-    fecha_nac DATE,
-    usuario_id INT,
+    fecha_nac DATE
+);
+
+CREATE TABLE educando_usuario (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    educando_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    UNIQUE KEY unique_educando_usuario (educando_id, usuario_id),
+    FOREIGN KEY (educando_id) REFERENCES educandos(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
-        ON DELETE SET NULL
+        ON DELETE CASCADE
         ON UPDATE CASCADE
 );
 

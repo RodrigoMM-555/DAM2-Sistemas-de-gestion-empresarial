@@ -91,6 +91,28 @@ header div{
     gap: 5px;
 }
 
+.icono-modulos {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 10px;
+
+    width: 30px;
+    height: 30px;
+
+    background-color: var(--color_fondo);
+    color: var(--color_corporativo);
+    font-size: 18px;
+    font-weight: bold;
+
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+a.activo .icono-modulos{
+    color: var(--color_fondo);
+    background-color: var(--color_corporativo);
+}
+
 .botonConfiguracion{
     display:block;
     padding:2px 5px;
@@ -232,16 +254,55 @@ section h2{
 
 .filtros-tabla{
     display: flex;
+    align-items: center;
     flex-direction: row;
-    gap: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
     margin-bottom: 10px;
     background: var(--color_corporativo);
     padding: 10px;
     border-radius: var(--radio);
 }
 
+
+.controles-filtro{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+
+.filtros-tabla .boton-crear{
+    margin-left:auto;
+}
+
 .selector-columna{
     max-width: 100px;
+}
+
+
+.buscador-tabla{
+    min-width:220px;
+    padding:9px 12px;
+    border:1px solid var(--color_borde);
+    border-radius:7px;
+    background:var(--color_superficie);
+    color:var(--color_texto);
+    font-family:inherit;
+    font-size:14px;
+    outline:none;
+}
+
+
+.buscador-tabla:focus{
+    border-color:var(--color_corporativo);
+    box-shadow:
+        0 0 0 3px
+        color-mix(
+            in srgb,
+            var(--color_corporativo),
+            transparent 80%
+        );
 }
 
 .cabecera-tabla{
@@ -251,9 +312,38 @@ section h2{
 
     justify-content:space-between;
 
-    gap:20px;
+    gap:25px;
 
+    min-height:58px;
     margin-bottom:20px;
+}
+
+
+.cabecera-dashboard{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:20px;
+    min-height:58px;
+    margin-bottom:20px;
+}
+
+
+.controles-exportacion{
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+
+.selector-exportacion{
+    min-width:150px;
+}
+
+
+.boton-exportar{
+    background:var(--color_corporativo);
+    color:white;
 }
 
 
@@ -300,6 +390,8 @@ table th{
 table td{
     padding:13px 16px;
 
+    overflow-wrap: break-word;
+
     border-top:1px solid var(--color_borde);
 
     font-size:14px;
@@ -321,6 +413,11 @@ table tbody tr:hover{
 .boton{
     border:0;
 
+    /*
+    min-height: 40px;
+    min-width: 80px;
+    */
+
     border-radius:7px;
 
     padding:9px 14px;
@@ -337,6 +434,7 @@ table tbody tr:hover{
         transform 0.15s,
         opacity 0.15s,
         box-shadow 0.15s;
+
 }
 
 
@@ -385,7 +483,6 @@ table tbody tr:hover{
 
 .acciones{
     display:flex;
-    justify-content: flex-end;
 
     gap:8px;
 
@@ -490,6 +587,162 @@ table tbody tr:hover{
 }
 
 
+/* DASHBOARD */
+
+.cabecera-dashboard{
+    margin-bottom:20px;
+}
+
+
+.cabecera-dashboard h2{
+    margin-bottom:6px;
+}
+
+
+.cabecera-dashboard p{
+    margin:0;
+    color:var(--color_secundario);
+}
+
+
+.dashboard-indicadores{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:18px;
+    margin-bottom:25px;
+}
+
+
+.indicador{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    min-width:0;
+    padding:20px;
+    background:var(--color_superficie);
+    border:1px solid var(--color_borde);
+    border-radius:var(--radio);
+    box-shadow:var(--sombra);
+    transition:
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
+
+}
+
+.indicador:hover{
+    border-color:color-mix(
+        in srgb,
+        var(--color_corporativo),
+        var(--color_borde) 65%
+    );
+    box-shadow:0 7px 20px rgba(0,0,0,0.12);
+
+}
+
+.indicador small{
+    color:var(--color_secundario);
+    font-size:13px;
+}
+
+
+.indicador strong{
+    overflow:hidden;
+    color:var(--color_corporativo);
+    font-size:26px;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+
+.indicador span{
+    color:var(--color_secundario);
+    font-size:12px;
+}
+
+
+.dashboard-graficas{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:20px;
+}
+
+
+.grafica-card{
+    min-width:0;
+    padding:20px;
+    background:var(--color_superficie);
+    border:1px solid var(--color_borde);
+    border-radius:var(--radio);
+    box-shadow:var(--sombra);
+    transition:
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
+}
+
+
+.grafica-card:hover{
+    border-color:color-mix(
+        in srgb,
+        var(--color_corporativo),
+        var(--color_borde) 65%
+    );
+    box-shadow:0 7px 20px rgba(0,0,0,0.12);
+}
+
+
+.grafica-card h3{
+    margin:0 0 12px;
+    font-size:17px;
+}
+
+
+.grafica-svg{
+    display:block;
+    width:100%;
+    min-height:260px;
+}
+
+
+.grafica-svg rect,
+.grafica-svg path{
+    cursor:crosshair;
+    transition:
+        opacity 0.15s ease,
+        filter 0.15s ease;
+}
+
+
+.grafica-svg rect:hover,
+.grafica-svg path:hover{
+    opacity:0.72;
+    filter:brightness(1.08);
+}
+
+
+.grafica-tooltip{
+    display:none;
+    position:fixed;
+    z-index:9999;
+    max-width:220px;
+    padding:9px 13px;
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:7px;
+    color:white;
+    background:#252525;
+    box-shadow:0 4px 14px rgba(0,0,0,0.25);
+    font-size:12px;
+    line-height:1.4;
+    pointer-events:none;
+}
+
+
+@media(max-width:1000px){
+    .dashboard-indicadores{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+}
+
+
 /* RESPONSIVE */
 
 @media(max-width:900px){
@@ -548,9 +801,45 @@ table tbody tr:hover{
         flex-direction:column;
     }
 
+    .dashboard-graficas{
+        grid-template-columns:1fr;
+    }
+
     table{
         display:block;
 
         overflow-x:auto;
+    }
+}
+
+
+@media print{
+    header,
+    nav,
+    .controles-exportacion,
+    .filtros-tabla,
+    .acciones,
+    .cabecera-tabla .boton,
+    .cabecera-dashboard .boton{
+        display:none !important;
+    }
+
+    section{
+        overflow:visible;
+        padding:0;
+    }
+
+    .cabecera-tabla,
+    .cabecera-dashboard{
+        display:block;
+        height:auto;
+        min-height:0;
+    }
+
+    .grafica-card,
+    .indicador,
+    table{
+        box-shadow:none;
+        break-inside:avoid;
     }
 }

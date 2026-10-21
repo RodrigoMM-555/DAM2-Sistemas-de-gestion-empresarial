@@ -59,8 +59,17 @@ function crearSqlTabla($tabla, $columnas) {
     $definiciones = [
         '"id" INTEGER PRIMARY KEY AUTOINCREMENT'
     ];
+    $restricciones = [];
 
     foreach ($columnas as $columna) {
+        // Las restricciones de tabla no tienen nombre de columna propio.
+        // Se añaden sin comillas para conservar claves compuestas y nombres
+        // de restricciones válidos en SQLite.
+        if (preg_match('/^(PRIMARY KEY|UNIQUE(?: KEY)?|FOREIGN KEY|CHECK)\b/i', trim($columna)) === 1) {
+            $restricciones[] = trim($columna);
+            continue;
+        }
+
         // Separamos únicamente por el primer grupo de espacios:
         // la primera parte es el nombre y el resto contiene tipo y reglas.
         $partes = preg_split('/\s+/', trim($columna), 2);
@@ -93,7 +102,7 @@ function crearSqlTabla($tabla, $columnas) {
     // IF NOT EXISTS permite ejecutar el instalador sin sobrescribir una tabla
     // ya creada ni borrar sus datos.
     return 'CREATE TABLE IF NOT EXISTS "' . $tabla . '" ('
-        . implode(', ', $definiciones)
+        . implode(', ', array_merge($definiciones, $restricciones))
         . ')';
 }
 
@@ -160,14 +169,16 @@ try {
     // Si falla una tabla, se deshacen también las tablas creadas antes dentro
     // de esta instalación. Así no queda una base de datos a medias.
     $db->exec('BEGIN');
+    $transaccionIniciada = true;
 
     foreach ($tablas as $sql) {
         $db->exec($sql);
     }
 
     $db->exec('COMMIT');
+    $transaccionIniciada = false;
 } catch (Throwable $error) {
-    if ($db->inTransaction()) {
+    if (!empty($transaccionIniciada)) {
         $db->exec('ROLLBACK');
     }
 

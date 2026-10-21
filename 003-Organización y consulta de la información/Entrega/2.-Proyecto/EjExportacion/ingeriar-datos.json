@@ -1,0 +1,26 @@
+{
+    "generado": "2026-10-21T14:25:51.089Z",
+    "tablas": [
+        {
+            "titulo": "Educandos",
+            "columnas": [
+                "Id",
+                "Nombre",
+                "Apellidos",
+                "Dni",
+                "Fecha Nac",
+                "Usuario Id"
+            ],
+            "registros": [
+                {
+                    "Id": "1",
+                    "Nombre": "a",
+                    "Apellidos": "a",
+                    "Dni": "12345678o",
+                    "Fecha Nac": "2026-10-02",
+                    "Usuario Id": ""
+                }
+            ]
+        }
+    ]
+}

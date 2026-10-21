@@ -68,25 +68,20 @@ function obtenerColumnas($db, $tabla) {
 
     $resultado = $db->query("PRAGMA table_info(\"$tabla\")");
 
-    //Esto excluye a la propiedad cuya pk=1 que es el id
     while ($fila = $resultado->fetchArray(SQLITE3_ASSOC)) {
-        if ($fila['pk'] != 1) {
-            $tipo = strtoupper($fila['type']);
-            $opciones = obtenerOpcionesEnum($db, $tabla, $fila['name']);
+        $tipo = strtoupper($fila['type']);
+        $opciones = obtenerOpcionesEnum($db, $tabla, $fila['name']);
 
-            //Aqui en vez de pilalr solo el name de la columna pillamos todos los datos
-            $columnas[] = [
-                'nombre' => $fila['name'],
-                //strtoupper convierte a mayusculas
-                'tipo' => $tipo,
-                'tipo_formulario' => count($opciones) > 0 ? 'ENUM' : $tipo,
-                // =1 quiere decir que es NOT NULL, =0 es que puede ser NULL
-                'obligatorio' => (int)$fila['notnull'] === 1,
-                'valor_por_defecto' => limpiarValorPorDefecto($fila['dflt_value']),
-                'opciones' => $opciones,
-                'relacion' => $relaciones[$fila['name']] ?? null
-            ];
-        }
+        $columnas[] = [
+            'name' => $fila['name'],
+            'type' => $tipo,
+            'pk' => (int)$fila['pk'],
+            'tipo_formulario' => count($opciones) > 0 ? 'ENUM' : $tipo,
+            'required' => (int)$fila['notnull'] === 1,
+            'defaultValue' => limpiarValorPorDefecto($fila['dflt_value']),
+            'options' => $opciones,
+            'relation' => $relaciones[$fila['name']] ?? null
+        ];
     }
 
     return $columnas;
@@ -149,10 +144,14 @@ switch ($ruta) {
     case "modulos":
 
         responder([
-            "ventas",
-            "rrhh",
-            "facturacion",
-            "compras"
+            "Documentacion",
+            "Secretaria",
+            "Tesoreria",
+            "Intendencia",
+            "Animacion pedagogica",
+            "Jefatura",
+            "Comite",
+            "Ramas"
         ]);
 
         break;
@@ -188,9 +187,16 @@ switch ($ruta) {
             ]);
         }
 
-        $resultado = $db->query(
-            "SELECT * FROM \"$tabla\""
-        );
+        $columnas = obtenerColumnas($db, $tabla);
+        $clavePrimaria = null;
+        foreach ($columnas as $columna) {
+            if ($columna['pk'] > 0) {
+                $clavePrimaria = $columna['name'];
+                break;
+            }
+        }
+
+        $resultado = $db->query("SELECT * FROM \"$tabla\"");
 
         $registros = [];
 
@@ -198,7 +204,12 @@ switch ($ruta) {
             $registros[] = $fila;
         }
 
-        responder($registros);
+        responder([
+            'tabla' => $tabla,
+            'columnas' => $columnas,
+            'registros' => $registros,
+            'primaryKey' => $clavePrimaria
+        ]);
 
         break;
 
@@ -232,8 +243,11 @@ switch ($ruta) {
         }
 
         $columnasPermitidas = array_column(
-            obtenerColumnas($db, $tabla),
-            'nombre'
+            array_filter(
+                obtenerColumnas($db, $tabla),
+                fn($columna) => $columna['pk'] === 0
+            ),
+            'name'
         );
 
         $columnas = [];
@@ -289,9 +303,16 @@ switch ($ruta) {
         }
 
         $columnasPermitidas = array_column(
-            obtenerColumnas($db, $tabla),
-            'nombre'
+            array_filter(
+                obtenerColumnas($db, $tabla),
+                fn($columna) => $columna['pk'] === 0
+            ),
+            'name'
         );
+        $clavePrimaria = array_values(array_filter(
+            obtenerColumnas($db, $tabla),
+            fn($columna) => $columna['pk'] > 0
+        ))[0]['name'] ?? 'id';
 
         $cambios = [];
         $valores = [];
@@ -309,7 +330,7 @@ switch ($ruta) {
         $sql = "
             UPDATE \"$tabla\"
             SET " . implode(',', $cambios) . "
-            WHERE id = ?
+            WHERE \"$clavePrimaria\" = ?
         ";
 
         $stmt = $db->prepare($sql);
@@ -348,9 +369,14 @@ switch ($ruta) {
             ]);
         }
 
+        $clavePrimaria = array_values(array_filter(
+            obtenerColumnas($db, $tabla),
+            fn($columna) => $columna['pk'] > 0
+        ))[0]['name'] ?? 'id';
+
         $stmt = $db->prepare("
             DELETE FROM \"$tabla\"
-            WHERE id = ?
+            WHERE \"$clavePrimaria\" = ?
         ");
 
         $stmt->bindValue(
