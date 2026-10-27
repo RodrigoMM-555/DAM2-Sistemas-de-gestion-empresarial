@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>Informe de Ingeriar</title>
+    <style>:root { --color_corporativo: darkred; --color_fondo: #f4f5f7; --color_superficie: #ffffff; --color_borde: #e1e4e8; --color_texto: #252525; --color_secundario: #6b7280; --color_exito: #198754; --color_peligro: #dc3545; --margen_interior: 20px; --radio: 10px; --sombra: 0 4px 14px rgba(0,0,0,0.08); }
+* { box-sizing: border-box; }
+html, body { padding: 0px; margin: 0px; width: 100%; height: 100%; font-family: Ubuntu, Arial, sans-serif; color: var(--color_texto); background: var(--color_fondo); }
+body { display: flex; flex-direction: column; }
+header { display: flex; flex: 0 0 auto; color: white; background: linear-gradient(
+            135deg,
+            var(--color_corporativo),
+            color-mix(
+                in srgb,
+                var(--color_corporativo),
+                black 20%
+            )
+        ); padding: 25px 30px; box-shadow: rgba(0, 0, 0, 0.15) 0px 2px 8px; z-index: 10; justify-content: space-between; }
+header h1 { padding: 0px; margin: 0px; font-size: 24px; font-weight: 600; }
+header div { display: flex; flex-direction: row; gap: 5px; }
+.botonConfiguracion { display: block; padding: 2px 5px; border: 0px; border-radius: 8px; background: white; color: var(--color_corporativo); font-family: inherit; font-size: 24px; font-weight: 600; cursor: pointer; transition: background 0.2s, transform 0.2s, box-shadow 0.2s; box-shadow: rgba(0, 0, 0, 0.12) 0px 2px 8px; }
+.botonConfiguracion:hover { background: rgba(255, 255, 255, 0.85); transform: translateY(-1px); box-shadow: rgba(0, 0, 0, 0.18) 0px 3px 8px; }
+.botonConfiguracion:active { transform: translateY(0px); }
+main { flex: 1 1 0%; display: flex; min-height: 0px; }
+nav { flex: 0 0 200px; background: var(--color_corporativo); display: flex; flex-direction: column; padding: 15px; gap: 12px; overflow-y: auto; }
+#entidades { background: color-mix(
+            in srgb,
+            var(--color_corporativo),
+            black 12%
+        ); }
+nav a { display: block; padding: 12px 14px; border-radius: 8px; background: rgba(255, 255, 255, 0.08); color: white; text-decoration: none; font-size: 14px; transition: background 0.2s, transform 0.2s; }
+nav a:hover { background: rgba(255, 255, 255, 0.18); transform: translateX(3px); }
+nav a.activo { background: white; color: var(--color_corporativo); font-weight: 600; box-shadow: rgba(0, 0, 0, 0.12) 0px 2px 8px; }
+section { flex: 1 1 0%; min-width: 0px; overflow: auto; padding: 30px; }
+section h2 { margin: 0px; font-size: 24px; font-weight: 600; }
+.filtros-tabla { display: flex; align-items: center; flex-flow: wrap; gap: 10px; margin-bottom: 10px; background: var(--color_corporativo); padding: 10px; border-radius: var(--radio); }
+.controles-filtro { display: flex; align-items: center; gap: 10px; }
+.filtros-tabla .boton-crear { margin-left: auto; }
+.selector-columna { max-width: 100px; }
+.buscador-tabla { min-width: 220px; padding: 9px 12px; border: 1px solid var(--color_borde); border-radius: 7px; background: var(--color_superficie); color: var(--color_texto); font-family: inherit; font-size: 14px; outline: none; }
+.buscador-tabla:focus { border-color: var(--color_corporativo); box-shadow: 0 0 0 3px
+        color-mix(
+            in srgb,
+            var(--color_corporativo),
+            transparent 80%
+        ); }
+.cabecera-tabla { display: flex; align-items: center; justify-content: space-between; gap: 25px; min-height: 58px; margin-bottom: 20px; }
+.cabecera-dashboard { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 58px; margin-bottom: 20px; }
+.controles-exportacion { display: flex; align-items: center; gap: 8px; }
+.selector-exportacion { min-width: 150px; }
+.boton-exportar { background: var(--color_corporativo); color: white; }
+table { width: 100%; border-collapse: separate; border-spacing: 0px; background: var(--color_superficie); border: 1px solid var(--color_borde); border-radius: var(--radio); overflow: hidden; box-shadow: var(--sombra); }
+table th { background: var(--color_corporativo); color: white; text-align: left; padding: 14px 16px; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+table td { padding: 13px 16px; overflow-wrap: break-word; border-top: 1px solid var(--color_borde); font-size: 14px; }
+table tbody tr { transition: background 0.15s; }
+table tbody tr:hover { background: rgb(248, 249, 250); }
+.boton { border: 0px; border-radius: 7px; padding: 9px 14px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: transform 0.15s, opacity 0.15s, box-shadow 0.15s; }
+.boton:hover { transform: translateY(-1px); box-shadow: rgba(0, 0, 0, 0.12) 0px 3px 8px; }
+.boton:active { transform: translateY(0px); }
+.boton-crear { background: var(--color_exito); color: white; }
+.boton-editar { background: rgb(240, 173, 78); color: white; }
+.boton-borrar { background: var(--color_peligro); color: white; }
+.boton-cancelar { background: rgb(108, 117, 125); color: white; }
+.acciones { display: flex; gap: 8px; white-space: nowrap; }
+.formulario { max-width: 700px; margin-top: 25px; padding: 25px; background: white; border: 1px solid var(--color_borde); border-radius: var(--radio); box-shadow: var(--sombra); }
+.campo { display: flex; flex-direction: column; gap: 7px; margin-bottom: 18px; }
+.campo label { font-size: 14px; font-weight: 600; color: rgb(68, 68, 68); }
+.campo input, select { width: 100%; padding: 11px 13px; border: 1px solid rgb(209, 213, 219); border-radius: 7px; font-family: inherit; font-size: 14px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+.campo input:focus { border-color: var(--color_corporativo); box-shadow: 0 0 0 3px
+        color-mix(
+            in srgb,
+            var(--color_corporativo),
+            transparent 80%
+        ); }
+.acciones-formulario { display: flex; gap: 10px; padding-top: 10px; }
+.sin-datos { padding: 40px; text-align: center; color: var(--color_secundario); background: white; border: 1px dashed var(--color_borde); border-radius: var(--radio); }
+.cabecera-dashboard { margin-bottom: 20px; }
+.cabecera-dashboard h2 { margin-bottom: 6px; }
+.cabecera-dashboard p { margin: 0px; color: var(--color_secundario); }
+.dashboard-indicadores { display: grid; grid-template-columns: repeat(4, minmax(0px, 1fr)); gap: 18px; margin-bottom: 25px; }
+.indicador { display: flex; flex-direction: column; gap: 8px; min-width: 0px; padding: 20px; background: var(--color_superficie); border: 1px solid var(--color_borde); border-radius: var(--radio); box-shadow: var(--sombra); transition: box-shadow 0.2s, border-color 0.2s; }
+.indicador:hover { border-color: color-mix(
+        in srgb,
+        var(--color_corporativo),
+        var(--color_borde) 65%
+    ); box-shadow: rgba(0, 0, 0, 0.12) 0px 7px 20px; }
+.indicador small { color: var(--color_secundario); font-size: 13px; }
+.indicador strong { overflow: hidden; color: var(--color_corporativo); font-size: 26px; text-overflow: ellipsis; white-space: nowrap; }
+.indicador span { color: var(--color_secundario); font-size: 12px; }
+.dashboard-graficas { display: grid; grid-template-columns: repeat(2, minmax(0px, 1fr)); gap: 20px; }
+.grafica-card { min-width: 0px; padding: 20px; background: var(--color_superficie); border: 1px solid var(--color_borde); border-radius: var(--radio); box-shadow: var(--sombra); transition: box-shadow 0.2s, border-color 0.2s; }
+.grafica-card:hover { border-color: color-mix(
+        in srgb,
+        var(--color_corporativo),
+        var(--color_borde) 65%
+    ); box-shadow: rgba(0, 0, 0, 0.12) 0px 7px 20px; }
+.grafica-card h3 { margin: 0px 0px 12px; font-size: 17px; }
+.grafica-svg { display: block; width: 100%; min-height: 260px; }
+.grafica-svg rect, .grafica-svg path { cursor: crosshair; transition: opacity 0.15s, filter 0.15s; }
+.grafica-svg rect:hover, .grafica-svg path:hover { opacity: 0.72; filter: brightness(1.08); }
+.grafica-tooltip { display: none; position: fixed; z-index: 9999; max-width: 220px; padding: 9px 13px; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 7px; color: white; background: rgb(37, 37, 37); box-shadow: rgba(0, 0, 0, 0.25) 0px 4px 14px; font-size: 12px; line-height: 1.4; pointer-events: none; }
+@media (max-width: 1000px) {
+  .dashboard-indicadores { grid-template-columns: repeat(2, minmax(0px, 1fr)); }
+}
+@media (max-width: 900px) {
+  nav { flex-basis: 150px; }
+  section { padding: 20px; }
+  table { font-size: 13px; }
+  table th, table td { padding: 10px; }
+}
+@media (max-width: 700px) {
+  main { flex-direction: column; }
+  nav { flex: 0 0 auto; flex-direction: row; overflow: auto hidden; }
+  nav a { white-space: nowrap; }
+  #modulos, #entidades { padding: 10px; }
+  section { padding: 15px; }
+  .cabecera-tabla { align-items: flex-start; flex-direction: column; }
+  .dashboard-graficas { grid-template-columns: 1fr; }
+  table { display: block; overflow-x: auto; }
+}
+@media print {
+  header, nav, .controles-exportacion, .filtros-tabla, .acciones, .cabecera-tabla .boton, .cabecera-dashboard .boton { display: none !important; }
+  section { overflow: visible; padding: 0px; }
+  .cabecera-tabla, .cabecera-dashboard { display: block; height: auto; min-height: 0px; }
+  .grafica-card, .indicador, table { box-shadow: none; break-inside: avoid; }
+}
+        main{
+            margin: 20px;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body>
+    <main class="informe-exportado">
+        <div class="cabecera-dashboard"><div><h2>Dashboard</h2><p>Resumen de los datos disponibles en las entidades.</p></div></div><div class="dashboard-indicadores"><article class="indicador"><small>Entidades</small><strong>4</strong><span>Entidades disponibles</span></article><article class="indicador"><small>Registros</small><strong>1</strong><span>Registros almacenados</span></article><article class="indicador"><small>Con datos</small><strong>1</strong><span>Entidades con registros</span></article><article class="indicador"><small>Mayor entidad</small><strong>Educandos</strong><span>1 registros</span></article></div><div class="dashboard-graficas"><article class="grafica-card"><h3>Registros por entidad</h3><svg viewBox="0 0 440 260" role="img" aria-label="Registros por entidad" class="grafica-svg"><rect x="25" y="26" width="89.75" height="190" rx="4" fill="#66ff00"></rect><text x="69.875" y="235" text-anchor="middle" font-size="10" fill="#555">Educandos</text><rect x="123.75" y="216" width="89.75" height="0" rx="4" fill="#e72222"></rect><text x="168.625" y="235" text-anchor="middle" font-size="10" fill="#555">Usuarios</text><rect x="222.5" y="216" width="89.75" height="0" rx="4" fill="#155fe8"></rect><text x="267.375" y="235" text-anchor="middle" font-size="10" fill="#555">Eventos</text><rect x="321.25" y="216" width="89.75" height="0" rx="4" fill="#ebe710"></rect><text x="366.125" y="235" text-anchor="middle" font-size="10" fill="#555">Asistencias</text></svg></article><article class="grafica-card"><h3>Educandos por Nombre</h3><svg viewBox="0 0 440 260" role="img" aria-label="Educandos por Nombre" class="grafica-svg"><path d="M 40 128 a 105 105 0 1 0 210 0 a 105 105 0 1 0 -210 0 Z" fill="#66ff00" stroke="#fff" stroke-width="2" fill-rule="evenodd"></path><rect x="275" y="27" width="12" height="12" rx="3" fill="#66ff00"></rect><text x="293" y="38" fill="#444" font-size="12">a · 1</text></svg></article></div>
+    </main>
+</body>
+</html>

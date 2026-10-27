@@ -145,7 +145,6 @@ switch ($ruta) {
 
         responder([
             "Documentacion",
-            "Secretaria",
             "Tesoreria",
             "Intendencia",
             "Animacion pedagogica",

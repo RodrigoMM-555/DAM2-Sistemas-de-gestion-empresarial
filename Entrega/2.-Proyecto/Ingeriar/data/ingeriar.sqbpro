@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="ingeriar.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="0"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="2563"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><table title="asistencias" custom_title="0" dock_id="1" table="4,11:mainasistencias"/><dock_state state="000000ff00000000fd0000000100000002000001b400000202fc0100000001fb000000160064006f0063006b00420072006f00770073006500310100000000000001b40000011b00ffffff000001b40000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings><table schema="main" name="asistencias" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="26"/><column index="2" value="73"/><column index="3" value="92"/><column index="4" value="73"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table></browse_table_settings></tab_browse><tab_sql><sql name="SQL 1*">INSERT INTO usuarios (nombre, apellidos, email, telefono, rol) VALUES
+('Carlos', 'Martínez López', 'carlos.martinez@example.com', '600111222', 'administrador'),
+('Laura', 'García Pérez', 'laura.garcia@example.com', '600111223', 'scouter'),
+('David', 'Sánchez Ruiz', 'david.sanchez@example.com', '600111224', 'scouter'),
+('Marta', 'Fernández Torres', 'marta.fernandez@example.com', '600111225', 'tutor'),
+('Javier', 'López Martín', 'javier.lopez@example.com', '600111226', 'tutor'),
+('Ana', 'Pérez Gómez', 'ana.perez@example.com', '600111227', 'tutor'),
+('Pedro', 'Romero Díaz', 'pedro.romero@example.com', '600111228', 'tutor'),
+('Lucía', 'Navarro Gil', 'lucia.navarro@example.com', '600111229', 'tutor');
+
+INSERT INTO educandos (nombre, apellidos, dni, fecha_nac) VALUES
+('Daniel', 'López Fernández', '12345678A', '2015-03-12'),
+('Sofía', 'López Fernández', '23456789B', '2012-07-24'),
+('Pablo', 'Martínez García', '34567890C', '2014-11-05'),
+('Claudia', 'Sánchez Romero', '45678901D', '2013-01-18'),
+('Hugo', 'Pérez Torres', '56789012E', '2011-09-30'),
+('Valeria', 'Navarro Díaz', '67890123F', '2015-06-14'),
+('Mario', 'García Ruiz', '78901234G', '2012-12-02'),
+('Emma', 'Romero Gil', '89012345H', '2014-04-21');
+
+INSERT INTO educando_usuario (educando_id, usuario_id) VALUES
+(1, 4),
+(2, 4),
+(3, 5),
+(4, 6),
+(5, 7),
+(6, 8),
+(7, 5),
+(8, 6);
+
+INSERT INTO eventos (nombre, responsable_id, fecha_inicio, fecha_final, lugar, municipio, provincia, tipo) VALUES
+('Reunión semanal', 2, '2026-10-24 10:00:00', '2026-10-24 12:00:00', 'Local Scout', 'Valencia', 'Valencia', 'Reunión'),
+('Excursión al monte', 3, '2026-10-31 09:00:00', '2026-10-31 18:00:00', 'Sierra Calderona', 'Serra', 'Valencia', 'Excursión'),
+('Campamento de otoño', 2, '2026-11-06 17:00:00', '2026-11-08 18:00:00', 'Casa de colonias', 'Jalance', 'Valencia', 'Campamento'),
+('Taller de manualidades', 3, '2026-11-14 10:00:00', '2026-11-14 12:30:00', 'Local Scout', 'Valencia', 'Valencia', 'Taller'),
+('Salida cultural', 2, '2026-11-21 09:30:00', '2026-11-21 14:00:00', 'Centro histórico', 'Valencia', 'Valencia', 'Salida');
+
+INSERT INTO asistencias (evento_id, educando_id, asistencia) VALUES
+(1, 1, 'si'),
+(1, 2, 'si'),
+(1, 3, 'no'),
+(1, 4, 'pendiente'),
+(1, 5, 'si'),
+(1, 6, 'pendiente'),
+(1, 7, 'si'),
+(1, 8, 'no'),
+(2, 1, 'si'),
+(2, 2, 'no'),
+(2, 3, 'si'),
+(2, 4, 'si'),
+(2, 5, 'pendiente'),
+(2, 6, 'si'),
+(2, 7, 'pendiente'),
+(2, 8, 'si'),
+(3, 1, 'pendiente'),
+(3, 2, 'pendiente'),
+(3, 3, 'si'),
+(3, 4, 'pendiente'),
+(3, 5, 'si'),
+(3, 6, 'no'),
+(3, 7, 'si'),
+(3, 8, 'pendiente'),
+(4, 1, 'si'),
+(4, 2, 'si'),
+(4, 3, 'si'),
+(4, 4, 'no'),
+(4, 5, 'si'),
+(4, 6, 'si'),
+(4, 7, 'pendiente'),
+(4, 8, 'si'),
+(5, 1, 'pendiente'),
+(5, 2, 'pendiente'),
+(5, 3, 'pendiente'),
+(5, 4, 'pendiente'),
+(5, 5, 'pendiente'),
+(5, 6, 'pendiente'),
+(5, 7, 'pendiente'),
+(5, 8, 'pendiente');
+</sql><current_tab id="0"/></tab_sql></sqlb_project>
