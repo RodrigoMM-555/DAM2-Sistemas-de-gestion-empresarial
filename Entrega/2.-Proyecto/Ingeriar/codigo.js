@@ -1,11 +1,14 @@
 let tablaActual = "";
+let vistaActual = "tabla";
 
-const entidadesOcultas = ["educando_usuario", "asistencias"];
+const entidadesOcultas = ["educando_usuario", "asistencias", "eventos"];
 
 const formulario = new IngeriarFormulario({
     utilidades,
     alGuardar: function () {
-        return tabla.cargar(tablaActual);
+        return vistaActual === "calendario"
+            ? calendario.cargar("eventos")
+            : tabla.cargar(tablaActual);
     }
 });
 const exportacion = new IngeriarExportacion({contenedor: "section"});
@@ -21,6 +24,19 @@ const dashboard = new IngeriarDashboard({
     graficas,
     exportacion
 });
+const calendario = new IngeriarCalendario({
+    utilidades,
+    formulario,
+    contenedor: "section"
+});
+
+function marcarEnlaceActivo(enlace) {
+    document.querySelectorAll("#entidades a")
+        .forEach(function (elemento) {
+            elemento.classList.remove("activo");
+        });
+    enlace.classList.add("activo");
+}
 
 function crearEnlaceDashboard() {
     let enlace = document.createElement("a");
@@ -28,12 +44,23 @@ function crearEnlaceDashboard() {
     enlace.textContent = "Dashboard";
     enlace.onclick = function (evento) {
         evento.preventDefault();
-        document.querySelectorAll("#entidades a")
-            .forEach(function (elemento) {
-                elemento.classList.remove("activo");
-            });
-        enlace.classList.add("activo");
+        marcarEnlaceActivo(enlace);
+        vistaActual = "dashboard";
         dashboard.render();
+    };
+    document.querySelector("#entidades").prepend(enlace);
+    return enlace;
+}
+
+function crearEnlaceCalendario() {
+    let enlace = document.createElement("a");
+    enlace.href = "#";
+    enlace.textContent = "Calendario";
+    enlace.onclick = function (evento) {
+        evento.preventDefault();
+        marcarEnlaceActivo(enlace);
+        vistaActual = "calendario";
+        calendario.cargar("eventos");
     };
     document.querySelector("#entidades").prepend(enlace);
 }
@@ -79,11 +106,8 @@ function cargarEntidades() {
                     enlace.onclick = function (evento) {
                         evento.preventDefault();
                         tablaActual = dato;
-                        document.querySelectorAll("#entidades a")
-                            .forEach(function (elemento) {
-                                elemento.classList.remove("activo");
-                            });
-                        enlace.classList.add("activo");
+                        marcarEnlaceActivo(enlace);
+                        vistaActual = "tabla";
                         tabla.cargar(tablaActual);
                     };
                     menu.appendChild(enlace);
@@ -91,9 +115,11 @@ function cargarEntidades() {
             });
 
             if (datos.length > 0) {
-                crearEnlaceDashboard();
+                crearEnlaceCalendario();
+                const enlaceDashboard = crearEnlaceDashboard();
                 tablaActual = datos[0];
-                menu.querySelector("a").classList.add("activo");
+                enlaceDashboard.classList.add("activo");
+                vistaActual = "dashboard";
                 dashboard.render();
             }
         });

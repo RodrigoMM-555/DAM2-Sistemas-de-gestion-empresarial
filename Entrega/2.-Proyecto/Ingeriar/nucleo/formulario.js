@@ -1,24 +1,45 @@
 class IngeriarFormulario {
-    constructor({contenedor = "section", utilidades, alGuardar}) {
+    constructor({
+        contenedor = "#contenedor-formulario",
+        modal = "#modal-formulario",
+        utilidades,
+        alGuardar
+    }) {
         this.contenedor = typeof contenedor === "string"
             ? document.querySelector(contenedor)
             : contenedor;
+        this.modal = typeof modal === "string"
+            ? document.querySelector(modal)
+            : modal;
         this.utilidades = utilidades;
         this.alGuardar = alGuardar;
         this.tabla = "";
         this.clavePrimaria = "id";
         this.formulario = null;
+        this.ultimoElementoActivo = null;
+
+        this.modal.querySelector(".modal-cerrar")
+            .addEventListener("click", () => this.cerrar());
+        this.modal.querySelector(".modal-fondo")
+            .addEventListener("click", () => this.cerrar());
+        document.addEventListener("keydown", (evento) => {
+            if (evento.key === "Escape" && !this.modal.hidden) {
+                this.cerrar();
+            }
+        });
     }
 
     mostrar(registro = null, clavePrimaria = "id") {
         this.tabla = tablaActual;
         this.clavePrimaria = clavePrimaria || "id";
+        this.ultimoElementoActivo = document.activeElement;
         return this.obtenerColumnas().then((columnas) => {
             const columnasEditables = columnas.filter(
                 (columna) => columna.pk === 0
             );
             this.contenedor.innerHTML = "";
             let titulo = document.createElement("h2");
+            titulo.id = "modal-formulario-titulo";
             titulo.textContent = registro === null
                 ? "Nuevo " + this.utilidades.capitalizar(this.tabla)
                 : "Editar " + this.utilidades.capitalizar(this.tabla);
@@ -36,7 +57,7 @@ class IngeriarFormulario {
             cancelar.type = "button";
             cancelar.textContent = "Cancelar";
             cancelar.className = "boton boton-cancelar";
-            cancelar.onclick = () => this.alGuardar();
+            cancelar.onclick = () => this.cerrar();
             acciones.append(guardar, cancelar);
 
             return Promise.all(columnasEditables.map((columna) =>
@@ -49,8 +70,21 @@ class IngeriarFormulario {
                 this.formulario.onsubmit = (evento) =>
                     this.guardar(evento, columnasEditables, registro);
                 this.contenedor.appendChild(this.formulario);
+                this.modal.hidden = false;
+                document.body.classList.add("modal-abierto");
+                guardar.focus();
             });
         });
+    }
+
+    cerrar() {
+        this.modal.hidden = true;
+        this.contenedor.replaceChildren();
+        document.body.classList.remove("modal-abierto");
+        if (this.ultimoElementoActivo instanceof HTMLElement) {
+            this.ultimoElementoActivo.focus();
+        }
+        this.ultimoElementoActivo = null;
     }
 
     obtenerColumnas() {
@@ -61,7 +95,10 @@ class IngeriarFormulario {
     }
 
     plantilla(columna) {
-        if (columna.tipo_formulario === "ENUM") {
+        if (
+            columna.tipo_formulario === "ENUM" ||
+            columna.relation !== null
+        ) {
             return document.querySelector("#plantilla-select");
         }
         let tipo = columna.type.toUpperCase();
@@ -105,9 +142,7 @@ class IngeriarFormulario {
             ? this.obtenerOpcionesRelacion(columna).then((registros) =>
                 registros.map((relacion) => ({
                     valor: relacion[columna.relation.campo_valor],
-                    etiqueta: [relacion.nombre, relacion.apellidos]
-                        .filter(Boolean)
-                        .join(" ") || relacion.nombre || relacion.id
+                    etiqueta: this.etiquetaRelacion(relacion)
                 }))
             )
             : Promise.resolve(columna.options.map((valor) => ({
@@ -136,7 +171,35 @@ class IngeriarFormulario {
         return this.utilidades.obtenerJson(
             "api/superapi.php?ruta=tabla&tabla=" +
             encodeURIComponent(columna.relation.tabla)
-        ).then((datos) => datos.registros);
+        ).then((datos) => this.filtrarRelaciones(
+            datos.registros,
+            columna
+        ));
+    }
+
+    etiquetaRelacion(relacion) {
+        return [relacion.nombre, relacion.apellidos]
+            .filter(Boolean)
+            .join(" ") || relacion.nombre || relacion.id;
+    }
+
+    filtrarRelaciones(registros, columna) {
+        let filtros = {
+            "eventos.responsable_id": {
+                rol: ["scouter", "monitor"]
+            }
+        };
+        let filtro = filtros[this.tabla + "." + columna.name];
+
+        if (!filtro) {
+            return registros;
+        }
+
+        return registros.filter((registro) =>
+            Object.entries(filtro).every(([campo, valores]) =>
+                valores.includes(registro[campo])
+            )
+        );
     }
 
     guardar(evento, columnas, registro) {
@@ -163,7 +226,8 @@ class IngeriarFormulario {
         return this.utilidades.enviarFormulario(
             "api/superapi.php?ruta=" + ruta,
             formData
-        ).then(() => this.alGuardar());
+        ).then(() => Promise.resolve(this.alGuardar()))
+            .then(() => this.cerrar());
     }
 
 }

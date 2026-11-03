@@ -21,6 +21,16 @@
       </section>
     </main>
 
+    <div id="modal-formulario" class="modal-formulario" hidden>
+      <div class="modal-fondo"></div>
+      <div class="modal-dialogo" role="dialog" aria-modal="true"
+           aria-labelledby="modal-formulario-titulo">
+        <button class="modal-cerrar" type="button"
+                aria-label="Cerrar formulario">×</button>
+        <div id="contenedor-formulario"></div>
+      </div>
+    </div>
+
     <template id="plantilla-input">
       <div class="campo">
         <label></label>
@@ -63,6 +73,7 @@
     <script src="nucleo/formulario.js"></script>
     <script src="nucleo/dashboard.js"></script>
     <script src="nucleo/exportacion.js"></script>
+    <script src="nucleo/calendario.js"></script>
     <script src="codigo.js"></script>
   </body>
 </html>
