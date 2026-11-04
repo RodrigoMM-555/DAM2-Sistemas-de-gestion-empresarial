@@ -144,13 +144,7 @@ switch ($ruta) {
     case "modulos":
 
         responder([
-            "Documentacion",
-            "Tesoreria",
-            "Intendencia",
-            "Animacion pedagogica",
-            "Jefatura",
-            "Comite",
-            "Ramas"
+
         ]);
 
         break;
