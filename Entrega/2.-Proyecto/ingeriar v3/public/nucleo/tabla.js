@@ -28,29 +28,33 @@ class IngeriarTabla {
         cabecera.className = "cabecera-tabla";
         let titulo = document.createElement("h2");
         titulo.textContent = this.utilidades.capitalizar(this.tabla);
-        let exportacion = document.createElement("div");
-        exportacion.className = "controles-exportacion";
-        let formato = document.createElement("select");
-        formato.className = "selector-exportacion";
-        formato.setAttribute("aria-label", "Formato de exportación");
-        [
-            ["", "Exportar como..."],
-            ["imprimir", "Imprimir"],
-            ["html", "HTML"],
-            ["json", "JSON"],
-            ["csv", "CSV"]
-        ].forEach(([valor, texto]) => {
-            let opcion = document.createElement("option");
-            opcion.value = valor;
-            opcion.textContent = texto;
-            formato.appendChild(opcion);
-        });
-        let botonExportar = document.createElement("button");
-        botonExportar.textContent = "Exportar";
-        botonExportar.className = "boton boton-exportar";
-        exportacion.append(formato, botonExportar);
-        this.exportacion.conectarControles(formato, botonExportar);
-        cabecera.append(titulo, exportacion);
+        if (usuarioActual?.rol === "administrador") {
+            let exportacion = document.createElement("div");
+            exportacion.className = "controles-exportacion";
+            let formato = document.createElement("select");
+            formato.className = "selector-exportacion";
+            formato.setAttribute("aria-label", "Formato de exportación");
+            [
+                ["", "Exportar como..."],
+                ["imprimir", "Imprimir"],
+                ["html", "HTML"],
+                ["json", "JSON"],
+                ["csv", "CSV"]
+            ].forEach(([valor, texto]) => {
+                let opcion = document.createElement("option");
+                opcion.value = valor;
+                opcion.textContent = texto;
+                formato.appendChild(opcion);
+            });
+            let botonExportar = document.createElement("button");
+            botonExportar.textContent = "Exportar";
+            botonExportar.className = "boton boton-exportar";
+            exportacion.append(formato, botonExportar);
+            this.exportacion.conectarControles(formato, botonExportar);
+            cabecera.append(titulo, exportacion);
+        } else {
+            cabecera.appendChild(titulo);
+        }
         this.contenedor.appendChild(cabecera);
 
         let filtros = document.createElement("div");
@@ -64,6 +68,9 @@ class IngeriarTabla {
             null,
             datos.primaryKey
         );
+        if (usuarioActual?.rol === "tutor") {
+            nuevo.hidden = true;
+        }
 
         if (registros.length === 0) {
             filtros.appendChild(nuevo);
@@ -75,7 +82,9 @@ class IngeriarTabla {
             return;
         }
 
-        let nombres = Object.keys(registros[0]);
+        let nombres = Object.keys(registros[0]).filter((nombre) =>
+            nombre !== "id" || usuarioActual?.rol === "administrador"
+        );
         let selector = document.createElement("select");
         selector.className = "selector-columna";
         let buscador = document.createElement("input");
@@ -125,14 +134,33 @@ class IngeriarTabla {
 
         registros.forEach((registro) => {
             let fila = document.createElement("tr");
+            if (this.tabla === "educandos" && registro.seccion) {
+                fila.className = "fila-seccion-" + registro.seccion;
+            }
             nombres.forEach((nombre) => {
                 let celda = document.createElement("td");
                 celda.textContent = registro[nombre] ?? "";
+                if (nombre === "seccion" && registro.seccion) {
+                    celda.className = "celda-seccion";
+                    celda.textContent = registro.seccion;
+                }
                 fila.appendChild(celda);
             });
 
             let celdaAcciones = document.createElement("td");
             celdaAcciones.className = "acciones";
+            if (this.tabla === "educandos" && usuarioActual?.rol === "tutor") {
+                let info = document.createElement("button");
+                info.textContent = "Ver circulares";
+                info.className = "boton boton-editar";
+                info.onclick = () => this.mostrarDocumentosEducando(registro);
+                celdaAcciones.appendChild(info);
+            }
+            if (usuarioActual?.rol === "tutor") {
+                fila.appendChild(celdaAcciones);
+                cuerpo.appendChild(fila);
+                return;
+            }
             let editar = document.createElement("button");
             editar.textContent = "Editar";
             editar.className = "boton boton-editar";
@@ -154,6 +182,77 @@ class IngeriarTabla {
 
         this.contenedor.appendChild(tabla);
         this.configurarFiltros(selector, buscador, cuerpo);
+    }
+
+    mostrarDocumentosEducando(educando) {
+        return this.utilidades.obtenerJson(
+            "api/superapi.php?ruta=educando_documentos&educando=" +
+            encodeURIComponent(educando.id)
+        ).then((documentos) => {
+            const modal = document.querySelector("#modal-formulario");
+            const contenedor = document.querySelector("#contenedor-formulario");
+            contenedor.replaceChildren();
+            const titulo = document.createElement("h2");
+            titulo.textContent = "Circulares: " + educando.nombre + " " +
+                educando.apellidos;
+            contenedor.appendChild(titulo);
+            const rejilla = document.createElement("div");
+            rejilla.className = "rejilla-documentos";
+            contenedor.appendChild(rejilla);
+            if (!documentos.length) {
+                const mensaje = document.createElement("p");
+                mensaje.textContent = "No hay circulares subidas.";
+                rejilla.appendChild(mensaje);
+            }
+            documentos.forEach((documento) => {
+                const fila = document.createElement("article");
+                fila.className = "documento-circular";
+                const vista = document.createElement("div");
+                vista.className = "documento-vista";
+                const enlace = document.createElement("a");
+                enlace.href = "api/archivo.php?tipo=entrega&evento=" +
+                    documento.evento_id + "&educando=" + educando.id;
+                enlace.target = "_blank";
+                enlace.rel = "noopener";
+                enlace.textContent = documento.evento + " (" +
+                    documento.fecha_inicio.substring(0, 10) + ")";
+                enlace.className = "documento-enlace";
+                fila.append(vista, enlace);
+                rejilla.appendChild(fila);
+                this.crearVistaPrevia(
+                    enlace.href.replace("tipo=entrega", "tipo=preview"),
+                    vista
+                );
+            });
+            modal.hidden = false;
+            document.body.classList.add("modal-abierto");
+        });
+    }
+
+    crearVistaPrevia(url, contenedor) {
+        if (!window.Worker) {
+            contenedor.textContent = "Vista previa no disponible";
+            return;
+        }
+        const trabajador = new Worker("nucleo/documento-preview-worker.js");
+        trabajador.onmessage = (evento) => {
+            const resultado = evento.data;
+            trabajador.terminate();
+            if (resultado.kind === "image") {
+                const imagen = document.createElement("img");
+                imagen.src = URL.createObjectURL(resultado.blob);
+                imagen.alt = "Vista previa del documento";
+                contenedor.appendChild(imagen);
+            } else if (resultado.kind === "pdf") {
+                const marco = document.createElement("iframe");
+                marco.src = url;
+                marco.title = "Vista previa del PDF";
+                contenedor.appendChild(marco);
+            } else {
+                contenedor.textContent = "Vista previa no disponible";
+            }
+        };
+        trabajador.postMessage({url});
     }
 
     configurarFiltros(selector, buscador, cuerpo) {

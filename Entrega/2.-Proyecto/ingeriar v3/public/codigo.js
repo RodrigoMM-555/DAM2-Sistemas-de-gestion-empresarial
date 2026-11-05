@@ -1,5 +1,6 @@
 let tablaActual = "";
 let vistaActual = "tabla";
+let usuarioActual = null;
 
 const entidadesOcultas = ["usuarios_educandos", "educandos_asistencias", "eventos"];
 
@@ -155,12 +156,32 @@ function crearRedimensionable(elemento) {
 }
 
 function iniciarAplicacion() {
-    configuracion.cargar();
-    cargarModulos();
-    cargarEntidades();
-    crearRedimensionable(document.querySelector("#modulos"));
-    crearRedimensionable(document.querySelector("#entidades"));
-    configuracion.crearBoton();
+    utilidades.obtenerJson("api/superapi.php?ruta=usuario_actual")
+        .then((datos) => {
+            usuarioActual = datos.usuario;
+            calendario.establecerUsuario(usuarioActual);
+            const nombreCompleto = [
+                usuarioActual.nombre,
+                usuarioActual.apellidos
+            ].filter(Boolean).join(" ");
+            document.querySelector("#usuario-actual").textContent =
+                nombreCompleto;
+            document.querySelector("#rol-actual").textContent =
+                utilidades.capitalizar(usuarioActual.rol);
+            document.querySelector("#avatar-usuario").textContent =
+                (usuarioActual.nombre || "?").charAt(0).toUpperCase();
+            configuracion.cargar();
+            cargarModulos();
+            cargarEntidades();
+            crearRedimensionable(document.querySelector("#modulos"));
+            crearRedimensionable(document.querySelector("#entidades"));
+            if (usuarioActual.rol === "administrador") {
+                configuracion.crearBoton();
+            }
+        })
+        .catch(() => {
+            window.location.href = "login.html";
+        });
 }
 
 iniciarAplicacion();

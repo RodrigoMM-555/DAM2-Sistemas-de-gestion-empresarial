@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS facturas (
     fecha_compra DATETIME NOT NULL,
     concepto TEXT NOT NULL,
     precio DECIMAL(10, 2) NOT NULL,
-    categoria VARCHAR(50) NOT NULL,
+    categoria enum('envíos', 'comida', 'material', 'gasolina', 'otros', 'agua', 'luz', 'gas') NOT NULL,
     estado VARCHAR(50) NOT NULL,
     CONSTRAINT fk_facturas_responsable
         FOREIGN KEY (responsable_id) REFERENCES usuarios(id)
@@ -57,19 +57,20 @@ CREATE TABLE IF NOT EXISTS eventos (
     lugar VARCHAR(150),
     municipio VARCHAR(100),
     comunidad VARCHAR(100),
-    tipo VARCHAR(50) NOT NULL,
+    tipo  ENUM('reunión de familias', 'sabado', 'festival', 'excursion', 'otro') NOT NULL,
+    circular BOOLEAN NOT NULL DEFAULT FALSE,
     FOREIGN KEY (id_responsable) REFERENCES usuarios(id)
         ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS educandos_asistencias (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    id_usuario INT UNSIGNED NOT NULL,
+    id_educando INT UNSIGNED NOT NULL,
     id_evento INT UNSIGNED NOT NULL,
     estado ENUM('pendiente', 'si', 'no') NOT NULL DEFAULT 'pendiente',
-    circular BOOLEAN NOT NULL DEFAULT FALSE,
-    UNIQUE KEY unique_educando_asistencia (id_usuario, id_evento),
-    FOREIGN KEY (id_usuario) REFERENCES usuarios(id)
+    archivo_entrega VARCHAR(255),
+    UNIQUE KEY unique_educando_asistencia (id_educando, id_evento),
+    FOREIGN KEY (id_educando) REFERENCES educandos(id)
         ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (id_evento) REFERENCES eventos(id)
         ON DELETE CASCADE ON UPDATE CASCADE

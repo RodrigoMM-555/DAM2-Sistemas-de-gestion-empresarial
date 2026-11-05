@@ -5,10 +5,19 @@ class IngeriarCalendario {
             : contenedor;
         this.utilidades = utilidades;
         this.formulario = formulario;
+        this.usuario = null;
         this.eventos = [];
         this.tabla = "eventos";
         this.fechaActual = new Date();
         this.fechaSeleccionada = this.formatearFecha(this.fechaActual);
+    }
+
+    establecerUsuario(usuario) {
+        this.usuario = usuario;
+    }
+
+    esTutor() {
+        return this.usuario?.rol === "tutor";
     }
 
     cargar(tabla = "eventos") {
@@ -36,6 +45,18 @@ class IngeriarCalendario {
             const final = evento.fecha_fin?.substring(0, 10);
             return inicio && final && inicio <= fecha && fecha <= final;
         });
+    }
+
+    obtenerEventosMes() {
+        const año = this.fechaActual.getFullYear();
+        const mes = this.fechaActual.getMonth();
+        const inicio = this.formatearFecha(new Date(año, mes, 1));
+        const fin = this.formatearFecha(new Date(año, mes + 1, 0));
+        return this.eventos.filter((evento) => {
+            const fechaInicio = evento.fecha_inicio?.substring(0, 10);
+            const fechaFin = evento.fecha_fin?.substring(0, 10);
+            return fechaInicio && fechaFin && fechaInicio <= fin && fechaFin >= inicio;
+        }).sort((a, b) => a.fecha_inicio.localeCompare(b.fecha_inicio));
     }
 
     render() {
@@ -98,10 +119,14 @@ class IngeriarCalendario {
                 elemento.type = "button";
                 elemento.className = "cal-evento";
                 elemento.textContent = evento.nombre || "Evento";
-                elemento.title = "Editar " + (evento.nombre || "evento");
+                elemento.title = this.esTutor()
+                    ? "Indicar asistencia"
+                    : "Editar " + (evento.nombre || "evento");
                 elemento.addEventListener("click", (e) => {
                     e.stopPropagation();
-                    this.editarEvento(evento);
+                    this.esTutor()
+                        ? this.mostrarAsistencias(evento)
+                        : this.editarEvento(evento);
                 });
                 eventos.appendChild(elemento);
             });
@@ -150,44 +175,53 @@ class IngeriarCalendario {
         const panel = document.createElement("div");
         panel.className = "detalle-calendario";
         const titulo = document.createElement("h3");
-        titulo.textContent = new Date(this.fechaSeleccionada + "T12:00:00")
-            .toLocaleDateString("es-ES", {
-                weekday: "short",
-                day: "numeric",
-                month: "short",
-                year: "numeric"
-            });
+        titulo.textContent = this.fechaActual.toLocaleDateString("es-ES", {
+            month: "long",
+            year: "numeric"
+        });
         panel.appendChild(titulo);
 
-        const nuevo = document.createElement("button");
-        nuevo.type = "button";
-        nuevo.className = "boton boton-crear";
-        nuevo.textContent = "Nuevo evento";
-        nuevo.addEventListener("click", () => this.crearEvento());
-        panel.appendChild(nuevo);
+        if (!this.esTutor()) {
+            const nuevo = document.createElement("button");
+            nuevo.type = "button";
+            nuevo.className = "boton boton-crear";
+            nuevo.textContent = "Nuevo evento";
+            nuevo.addEventListener("click", () => this.crearEvento());
+            panel.appendChild(nuevo);
+        }
 
-        this.obtenerEventos(this.fechaSeleccionada).forEach((evento) => {
+        this.obtenerEventosMes().forEach((evento) => {
             const fila = document.createElement("div");
             fila.className = "detalle-evento";
             const nombre = document.createElement("span");
             nombre.textContent = evento.nombre || "Evento";
-            const editar = document.createElement("button");
-            editar.type = "button";
-            editar.className = "boton boton-editar";
-            editar.textContent = "Editar";
-            editar.addEventListener("click", () => this.editarEvento(evento));
-            const borrar = document.createElement("button");
-            borrar.type = "button";
-            borrar.className = "boton boton-borrar";
-            borrar.textContent = "Borrar";
-            borrar.addEventListener("click", () => this.borrarEvento(evento));
-            fila.append(nombre, editar, borrar);
+            const accion = document.createElement("button");
+            accion.type = "button";
+            accion.className = "boton " + (this.esTutor()
+                ? "boton-crear" : "boton-editar");
+            accion.textContent = this.esTutor() ? "+ Asistencia" : "Editar";
+            accion.addEventListener("click", () => this.esTutor()
+                ? this.mostrarAsistencias(evento)
+                : this.editarEvento(evento));
+            fila.append(nombre, accion);
+            if (!this.esTutor()) {
+                const borrar = document.createElement("button");
+                borrar.type = "button";
+                borrar.className = "boton boton-borrar";
+                borrar.textContent = "Borrar";
+                borrar.addEventListener("click", () => this.borrarEvento(evento));
+                fila.appendChild(borrar);
+            }
             panel.appendChild(fila);
         });
 
         this.contenedor
             .querySelector(".contenedor-calendario")
             .appendChild(panel);
+    }
+
+    eventoPasado(evento) {
+        return evento.fecha_fin && new Date(evento.fecha_fin.replace(" ", "T")) < new Date();
     }
 
     prepararFormulario() {
@@ -219,5 +253,147 @@ class IngeriarCalendario {
             "api/superapi.php?ruta=borrar",
             datos
         ).then(() => this.cargar(this.tabla));
+    }
+
+    mostrarAsistencias(evento) {
+        return this.utilidades.obtenerJson(
+            "api/superapi.php?ruta=asistencia_tutor&evento=" + evento.id
+        ).then((asistencias) => {
+            this.formulario.modal.hidden = false;
+            document.body.classList.add("modal-abierto");
+            this.formulario.contenedor.replaceChildren();
+
+            const titulo = document.createElement("h2");
+            titulo.id = "modal-formulario-titulo";
+            titulo.textContent = "Asistencia: " + evento.nombre;
+            this.formulario.contenedor.appendChild(titulo);
+
+            const tabla = document.createElement("table");
+            tabla.className = "tabla-asistencias";
+            const cabecera = document.createElement("thead");
+            cabecera.innerHTML = `
+                <tr>
+                    <th>Educando</th>
+                    <th>Sección</th>
+                    <th>Estado</th>
+                    <th>Asistencia</th>
+                    <th>Circular / entrega</th>
+                </tr>`;
+            tabla.appendChild(cabecera);
+            const cuerpo = document.createElement("tbody");
+            tabla.appendChild(cuerpo);
+            this.formulario.contenedor.appendChild(tabla);
+            const eventoPasado = this.eventoPasado(evento);
+            if (eventoPasado) {
+                const aviso = document.createElement("p");
+                aviso.textContent = "Este evento ya ha terminado; solo puedes consultar la información.";
+                aviso.className = "aviso-asistencia";
+                this.formulario.contenedor.insertBefore(aviso, tabla);
+            }
+
+            asistencias.forEach((asistencia) => {
+                const fila = document.createElement("tr");
+                if (asistencia.seccion) {
+                    fila.className = "fila-seccion-" + asistencia.seccion;
+                }
+                const nombre = document.createElement("td");
+                nombre.textContent = asistencia.nombre + " " + asistencia.apellidos;
+                const seccion = document.createElement("td");
+                seccion.className = "celda-seccion";
+                seccion.textContent = asistencia.seccion || "Sin determinar";
+                const estado = document.createElement("td");
+                const estadoTexto = document.createElement("span");
+                estadoTexto.className = "estado-asistencia";
+                estadoTexto.textContent = asistencia.estado === "pendiente"
+                    ? "Pendiente"
+                    : asistencia.estado === "si" ? "Confirmada" : "No asiste";
+                estado.appendChild(estadoTexto);
+
+                const respuesta = document.createElement("td");
+                ["si", "no"].forEach((valor) => {
+                    const etiqueta = document.createElement("label");
+                    etiqueta.className = "opcion-asistencia";
+                    const radio = document.createElement("input");
+                    radio.type = "radio";
+                    radio.name = "asistencia-" + asistencia.educando_id;
+                    radio.value = valor;
+                    radio.checked = asistencia.estado === valor;
+                    radio.disabled = eventoPasado;
+                    radio.addEventListener("change", () => {
+                        asistencia.estado = valor;
+                        estadoTexto.textContent = valor === "si"
+                            ? "Confirmada" : "No asiste";
+                        this.utilidades.enviarJson(
+                            "api/superapi.php?ruta=asistencia_tutor",
+                            {
+                                evento: evento.id,
+                                educando: asistencia.educando_id,
+                                estado: valor
+                            }
+                        ).catch((error) => {
+                            estadoTexto.textContent = error.message;
+                        });
+                        actualizarEntrega();
+                    });
+                    etiqueta.append(radio, valor === "si" ? " Sí" : " No");
+                    respuesta.appendChild(etiqueta);
+                });
+
+                const entrega = document.createElement("td");
+                const actualizarEntrega = () => {
+                    entrega.replaceChildren();
+                    if (!evento.circular || asistencia.estado !== "si") {
+                        entrega.textContent = evento.circular
+                            ? "No requiere entrega" : "Sin circular";
+                        return;
+                    }
+                    if (evento.circular) {
+                        const descarga = document.createElement("a");
+                        descarga.href = "api/archivo.php?tipo=circular&evento=" + evento.id;
+                        descarga.textContent = "Descargar circular";
+                        descarga.target = "_blank";
+                        entrega.appendChild(descarga);
+                    }
+                    const subida = document.createElement("input");
+                    subida.type = "file";
+                    subida.accept = ".pdf,.jpg,.jpeg,.png,.docx";
+                    subida.disabled = eventoPasado;
+                    subida.addEventListener("change", () => {
+                        if (!subida.files[0]) {
+                            return;
+                        }
+                        const datos = new FormData();
+                        datos.append("archivo", subida.files[0]);
+                        fetch(
+                            "api/archivo.php?tipo=entrega&evento=" +
+                            evento.id + "&educando=" + asistencia.educando_id,
+                            {method: "POST", body: datos}
+                        ).then((respuesta) => {
+                            if (!respuesta.ok) {
+                                return respuesta.text().then((mensaje) => {
+                                    throw new Error(mensaje);
+                                });
+                            }
+                            asistencia.archivo_entrega = true;
+                            actualizarEntrega();
+                        }).catch((error) => {
+                            entrega.append(" " + error.message);
+                        });
+                    });
+                    entrega.append(subida);
+                    if (asistencia.archivo_entrega) {
+                        const archivo = document.createElement("a");
+                        archivo.href = "api/archivo.php?tipo=entrega&evento=" +
+                            evento.id + "&educando=" + asistencia.educando_id;
+                        archivo.textContent = " Ver entrega";
+                        archivo.target = "_blank";
+                        entrega.appendChild(archivo);
+                    }
+                };
+                actualizarEntrega();
+                fila.append(nombre, seccion, estado, respuesta, entrega);
+                cuerpo.appendChild(fila);
+            });
+        });
     }
 }

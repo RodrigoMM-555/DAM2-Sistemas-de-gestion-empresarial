@@ -11,6 +11,14 @@
         <h1>Ingeriar | </h1>
         <h1 id="nombre">nombre_grupo</h1>
       </div>
+      <div class="sesion-actual">
+        <div class="avatar-usuario" id="avatar-usuario" aria-hidden="true"></div>
+        <div class="datos-usuario">
+          <strong id="usuario-actual"></strong>
+          <span id="rol-actual"></span>
+        </div>
+        <button id="cerrar-sesion" type="button">Salir</button>
+      </div>
     </header>
     <main>
       <nav id="modulos">
@@ -75,5 +83,10 @@
     <script src="nucleo/exportacion.js"></script>
     <script src="nucleo/calendario.js"></script>
     <script src="codigo.js"></script>
+    <script>
+      document.querySelector("#cerrar-sesion").addEventListener("click", () => {
+        fetch("api/logout.php").then(() => window.location.href = "login.html");
+      });
+    </script>
   </body>
 </html>

@@ -17,6 +17,7 @@ class IngeriarFormulario {
         this.clavePrimaria = "id";
         this.formulario = null;
         this.ultimoElementoActivo = null;
+        this.controlEducandos = null;
 
         this.modal.querySelector(".modal-cerrar")
             .addEventListener("click", () => this.cerrar());
@@ -33,6 +34,7 @@ class IngeriarFormulario {
         this.tabla = tablaActual;
         this.clavePrimaria = clavePrimaria || "id";
         this.ultimoElementoActivo = document.activeElement;
+        this.controlEducandos = null;
         return this.obtenerColumnas().then((columnas) => {
             const columnasEditables = columnas.filter(
                 (columna) => columna.pk === 0
@@ -47,6 +49,9 @@ class IngeriarFormulario {
 
             this.formulario = document.createElement("form");
             this.formulario.className = "formulario";
+            const controlEducandos = this.tabla === "usuarios"
+                ? this.crearControlEducandos(registro)
+                : Promise.resolve(null);
             let acciones = document.createElement("div");
             acciones.className = "acciones-formulario";
             let guardar = document.createElement("button");
@@ -60,11 +65,14 @@ class IngeriarFormulario {
             cancelar.onclick = () => this.cerrar();
             acciones.append(guardar, cancelar);
 
-            return Promise.all(columnasEditables.map((columna) =>
-                this.crearControl(columna, registro)
-            )).then((controles) => {
+            return Promise.all([
+                ...columnasEditables.map((columna) =>
+                    this.crearControl(columna, registro)
+                ),
+                controlEducandos
+            ]).then((controles) => {
                 controles.forEach((control) =>
-                    this.formulario.appendChild(control)
+                    control && this.formulario.appendChild(control)
                 );
                 this.formulario.appendChild(acciones);
                 this.formulario.onsubmit = (evento) =>
@@ -97,7 +105,8 @@ class IngeriarFormulario {
     plantilla(columna) {
         if (
             columna.tipo_formulario === "ENUM" ||
-            columna.relation !== null
+            columna.tipo_formulario === "BOOLEAN" ||
+            this.esRelacion(columna)
         ) {
             return document.querySelector("#plantilla-select");
         }
@@ -138,11 +147,17 @@ class IngeriarFormulario {
             return Promise.resolve(instancia);
         }
 
-        let opciones = columna.relation !== null
-            ? this.obtenerOpcionesRelacion(columna).then((registros) =>
-                registros.map((relacion) => ({
-                    valor: relacion[columna.relation.campo_valor],
-                    etiqueta: this.etiquetaRelacion(relacion)
+        const relacion = this.obtenerRelacion(columna);
+        let opciones = columna.tipo_formulario === "BOOLEAN"
+            ? Promise.resolve([
+                {valor: "0", etiqueta: "No"},
+                {valor: "1", etiqueta: "Sí"}
+            ])
+            : relacion !== null
+            ? this.obtenerOpcionesRelacion(relacion, columna).then((registros) =>
+                registros.map((registroRelacionado) => ({
+                    valor: registroRelacionado[relacion.campo_valor],
+                    etiqueta: this.etiquetaRelacion(registroRelacionado)
                 }))
             )
             : Promise.resolve(columna.options.map((valor) => ({
@@ -154,23 +169,88 @@ class IngeriarFormulario {
             if (!columna.required) {
                 valores.unshift({valor: "", etiqueta: "-- Sin asignar --"});
             }
+
             valores.forEach((opcion) => {
                 let elemento = document.createElement("option");
                 elemento.value = opcion.valor;
                 elemento.textContent = opcion.etiqueta;
                 control.appendChild(elemento);
             });
-            control.value = registro?.[columna.name]
-                ?? columna.defaultValue
-                ?? "";
+            control.value = registro?.[columna.name] !== undefined
+                ? (["1", 1, true, "true"].includes(registro[columna.name])
+                    ? "1" : "0")
+                : columna.tipo_formulario === "BOOLEAN"
+                    ? "0"
+                    : (registro?.[columna.name] ?? columna.defaultValue ?? "");
             return instancia;
         });
     }
 
-    obtenerOpcionesRelacion(columna) {
+    obtenerRelacion(columna) {
+        if (columna.relation !== null) {
+            return columna.relation;
+        }
+        const relaciones = {
+            "eventos.id_responsable": {
+                tabla: "usuarios",
+                campo_valor: "id"
+            },
+            "facturas.responsable_id": {
+                tabla: "usuarios",
+                campo_valor: "id"
+            }
+        };
+        return relaciones[this.tabla + "." + columna.name] || null;
+    }
+
+    esRelacion(columna) {
+        return this.obtenerRelacion(columna) !== null;
+    }
+
+    crearControlEducandos(registro) {
+        return Promise.all([
+            this.obtenerOpcionesTabla("educandos"),
+            registro
+                ? this.utilidades.obtenerJson(
+                    "api/superapi.php?ruta=educandos_usuario&usuario=" +
+                    encodeURIComponent(registro.id)
+                )
+                : Promise.resolve([])
+        ]).then(([educandos, seleccionados]) => {
+            const grupo = document.createElement("div");
+            grupo.className = "campo";
+            const etiqueta = document.createElement("label");
+            etiqueta.textContent = "Educandos relacionados";
+            const control = document.createElement("select");
+            control.name = "educandos_relacionados";
+            control.multiple = true;
+            control.size = Math.min(Math.max(educandos.length, 4), 8);
+            const idsSeleccionados = new Set(
+                seleccionados.map((educando) => String(educando.id))
+            );
+            educandos.forEach((educando) => {
+                const opcion = document.createElement("option");
+                opcion.value = educando.id;
+                opcion.textContent = this.etiquetaRelacion(educando);
+                opcion.selected = idsSeleccionados.has(String(educando.id));
+                control.appendChild(opcion);
+            });
+            grupo.append(etiqueta, control);
+            this.controlEducandos = control;
+            return grupo;
+        });
+    }
+
+    obtenerOpcionesTabla(tabla) {
+        return this.utilidades.obtenerJson(
+            "api/superapi.php?ruta=tabla&tabla=" + encodeURIComponent(tabla)
+        ).then((datos) => datos.registros || []);
+    }
+
+    obtenerOpcionesRelacion(relacion, columna) {
         return this.utilidades.obtenerJson(
             "api/superapi.php?ruta=tabla&tabla=" +
-            encodeURIComponent(columna.relation.tabla)
+            encodeURIComponent(relacion.tabla)
         ).then((datos) => this.filtrarRelaciones(
             datos.registros,
             columna
@@ -178,15 +258,22 @@ class IngeriarFormulario {
     }
 
     etiquetaRelacion(relacion) {
-        return [relacion.nombre, relacion.apellidos]
+        const nombreCompleto = [relacion.nombre, relacion.apellidos]
             .filter(Boolean)
-            .join(" ") || relacion.nombre || relacion.id;
+            .join(" ");
+        return nombreCompleto
+            || relacion.descripcion
+            || relacion.email
+            || relacion.id;
     }
 
     filtrarRelaciones(registros, columna) {
         let filtros = {
             "eventos.id_responsable": {
                 rol: ["scouter", "administrador"]
+            },
+            "facturas.responsable_id": {
+                rol: ["scouter"]
             }
         };
         let filtro = filtros[this.tabla + "." + columna.name];
@@ -210,6 +297,11 @@ class IngeriarFormulario {
             datos[columna.name] =
                 valor === "" && !columna.required ? null : valor;
         });
+        if (this.controlEducandos) {
+            datos.educandos_relacionados = Array.from(
+                this.controlEducandos.selectedOptions
+            ).map((opcion) => Number(opcion.value));
+        }
 
         let formData = new FormData();
         formData.append("tabla", this.tabla);

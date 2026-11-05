@@ -74,7 +74,7 @@ try {
     }
 
     $db = obtenerConexion(false);
-    $nombre = getenv('INGERIAR_DB_NAME') ?: 'ingeriar_v3';
+    $nombre = getenv('INGERIAR_DB_NAME') ?: 'ingeriar';
     $db->exec('CREATE DATABASE IF NOT EXISTS `' . str_replace('`', '``', $nombre)
         . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
     $db->exec('USE `' . str_replace('`', '``', $nombre) . '`');

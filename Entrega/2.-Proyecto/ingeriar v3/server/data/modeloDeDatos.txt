@@ -20,7 +20,7 @@ facturas
 - fecha_compra DATETIME NOT NULL
 - concepto TEXT NOT NULL
 - precio DECIMAL(10,2) NOT NULL
-- categoria VARCHAR(50) NOT NULL
+- categoria enum('envíos', 'comida', 'material', 'gasolina', 'otros', 'agua', 'luz', 'gas') NOT NULL
 - estado VARCHAR(50) NOT NULL
 
 usuarios_educandos
@@ -37,10 +37,11 @@ eventos
 - municipio VARCHAR(100)
 - comunidad VARCHAR(100)
 - tipo VARCHAR(50) NOT NULL
+- circular BOOLEAN NOT NULL DEFAULT FALSE
 
 educandos_asistencias
-- id_usuario INT UNSIGNED NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE
+- id_educando INT UNSIGNED NOT NULL REFERENCES educandos(id) ON DELETE CASCADE
 - id_evento INT UNSIGNED NOT NULL REFERENCES eventos(id) ON DELETE CASCADE
 - estado ENUM('pendiente', 'si', 'no') NOT NULL DEFAULT 'pendiente'
-- circular BOOLEAN NOT NULL DEFAULT FALSE
-- UNIQUE (id_usuario, id_evento)
+- archivo_entrega VARCHAR(255)
+- UNIQUE (id_educando, id_evento)

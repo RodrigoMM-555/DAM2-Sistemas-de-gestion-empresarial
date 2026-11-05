@@ -12,7 +12,7 @@ function obtenerConexion(bool $incluirBase = true): PDO
 
     $host = $obtenerVariable('INGERIAR_DB_HOST', 'localhost');
     $puerto = $obtenerVariable('INGERIAR_DB_PORT', '3306');
-    $nombre = $obtenerVariable('INGERIAR_DB_NAME', 'ingeriar_v3');
+    $nombre = $obtenerVariable('INGERIAR_DB_NAME', 'ingeriar');
     $usuario = $obtenerVariable('INGERIAR_DB_USER', 'ingeriar_app');
     $contrasena = $obtenerVariable('INGERIAR_DB_PASSWORD', 'contraseña1234$');
 

@@ -46,7 +46,14 @@ class IngeriarUtilidades {
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify(datos)
         }).then(function (respuesta) {
-            return respuesta.json();
+            return respuesta.json().then(function (resultado) {
+                if (!respuesta.ok || resultado.error) {
+                    throw new Error(
+                        resultado.error || "No se pudo completar la operación"
+                    );
+                }
+                return resultado;
+            });
         });
     }
 }
