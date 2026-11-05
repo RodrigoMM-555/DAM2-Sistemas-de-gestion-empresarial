@@ -1,0 +1,261 @@
+{
+  "entities": [
+    {
+      "id": "d0afb08c-6f7b-4d1a-b08d-ec1e057ab123",
+      "title": "usuarios",
+      "categories": [],
+      "properties": [
+        {
+          "id": "f5347566-9f2a-49a7-8164-f48c6975d93d",
+          "text": "id: integer"
+        },
+        {
+          "id": "3c53ce00-5c8a-4a3c-8b2a-f991515cbebf",
+          "text": "nombre: varchar"
+        },
+        {
+          "id": "e084377e-2210-4e25-9602-b09f291b05a9",
+          "text": "apellidos: varchar"
+        },
+        {
+          "id": "8741e332-99ca-4327-b25a-97e2eee9aa6e",
+          "text": "email: varchar"
+        },
+        {
+          "id": "b3bfea8f-b720-4a9b-9d7b-36aa59ef5e94",
+          "text": "telefono: integer"
+        },
+        {
+          "id": "96b43cc9-3e6f-4b1d-937c-2fe6f18330d8",
+          "text": "contraseña: varchar"
+        },
+        {
+          "id": "e1cfa791-32ab-4292-b76b-04a68514eba7",
+          "text": "rol: enum"
+        }
+      ],
+      "x": -237.2479216617197,
+      "y": -198.465770628543,
+      "rows": []
+    },
+    {
+      "id": "02e5f5f0-bd7f-4f4b-bf7a-9a28e40ef0a2",
+      "title": "educandos",
+      "categories": [],
+      "properties": [
+        {
+          "id": "d261bd32-9595-48e8-bb83-4591221ff266",
+          "text": "id: integer"
+        },
+        {
+          "id": "40ab508f-551c-4c85-94b0-28720b2fe1f7",
+          "text": "nombre: varchar"
+        },
+        {
+          "id": "9b2475c6-3c9e-4614-969f-d7718a5456e0",
+          "text": "apellidos: varchar"
+        },
+        {
+          "id": "e44079bf-5080-4f15-9857-c7a0ad363ddb",
+          "text": "DNI: varchar"
+        },
+        {
+          "id": "30655854-1144-4cd9-af1f-85831b189b54",
+          "text": "naz: date"
+        }
+      ],
+      "x": 484.5018840819946,
+      "y": 119.05026301007605
+    },
+    {
+      "id": "be7f1705-987f-4240-a582-6e5e6e64a4c5",
+      "title": "facturas",
+      "categories": [
+        "Tesoreria"
+      ],
+      "properties": [
+        {
+          "id": "890b61ce-269a-43cf-9b82-1278d0e70953",
+          "text": "id: integer"
+        },
+        {
+          "id": "3d0a096d-0197-4ff7-8e22-5d3e4faa4be0",
+          "text": "responsable_id: integer"
+        },
+        {
+          "id": "d9e6a6b0-d65b-44f6-aaa9-afa1ef8dfc6f",
+          "text": "numero_fact: integer"
+        },
+        {
+          "id": "c6504570-d891-4a0f-9ff0-2c8834e810b0",
+          "text": "CIF_prov: varchar"
+        },
+        {
+          "id": "b5210378-914c-47ce-94fe-b0c9bb545982",
+          "text": "fecha_emision: datetime"
+        },
+        {
+          "id": "3f9eef09-fb2e-4893-8f61-2757d8409507",
+          "text": "fecha_compra: datetime"
+        },
+        {
+          "id": "643f504f-092a-49c5-8c43-42ca5e422ee2",
+          "text": "concepto: text"
+        },
+        {
+          "id": "a9b9bf87-3c97-4fba-a3bb-242c0e0f5017",
+          "text": "precio: integer"
+        },
+        {
+          "id": "25beba5d-db80-4c0e-8b8a-fb715dcccf98",
+          "text": "categoria: ENUM"
+        },
+        {
+          "id": "fc424605-89c1-49c4-b202-c64448bcede4",
+          "text": "estado: ENUM"
+        }
+      ],
+      "x": -712.6179481290083,
+      "y": -26.424417398982698
+    },
+    {
+      "id": "3eb6cc54-93b2-4f59-a16d-70102d4abf35",
+      "title": "usuarios_educandos",
+      "categories": [],
+      "properties": [
+        {
+          "id": "d37a1a7e-9a1c-4c82-a848-3f64782ba0dd",
+          "text": "id: integer"
+        },
+        {
+          "id": "ce3756f9-cefa-4ca2-a524-2a15451e12a6",
+          "text": "id_usuario: integer"
+        },
+        {
+          "id": "e38d994a-9716-4fc3-ad2f-868aa9051329",
+          "text": "id_educando: integer"
+        }
+      ],
+      "x": 161.0478196896498,
+      "y": 196.9265639857242
+    },
+    {
+      "id": "9047dbfa-8325-42fd-93a5-4b4d41b1ff19",
+      "title": "educandos_asistencias",
+      "categories": [],
+      "properties": [
+        {
+          "id": "624d2794-e9ed-42b3-9d64-7fd7d2001d4e",
+          "text": "id: integer"
+        },
+        {
+          "id": "2aad852a-bda3-436d-b3d8-034dd29606e3",
+          "text": "id_usuario: integer"
+        },
+        {
+          "id": "6a02f8d2-6c08-4ab6-8376-8e4be303306c",
+          "text": "id_evento: integer"
+        },
+        {
+          "id": "43ddca01-98f2-44fa-8554-79a3a24ece8d",
+          "text": "estado: enum"
+        },
+        {
+          "id": "fdef1626-b1c3-44f8-a28a-030303871c2b",
+          "text": "circular: boolean"
+        }
+      ],
+      "x": 795.122130789983,
+      "y": 125.74970698580648
+    },
+    {
+      "id": "01d9154f-76b6-4189-b9c9-f486d146b28b",
+      "title": "eventos",
+      "categories": [],
+      "properties": [
+        {
+          "id": "72fe6c74-508c-491c-b36b-c08723a8c621",
+          "text": "id: integer"
+        },
+        {
+          "id": "ef69660d-a8e1-41f9-ad2e-5aa9cb8b55a6",
+          "text": "nombre: varchar"
+        },
+        {
+          "id": "cf6c7282-642f-43a5-9330-5fd5299d2719",
+          "text": "fecha_inicio: datetime"
+        },
+        {
+          "id": "eb467f71-cee9-4121-b1e8-d291bad8b548",
+          "text": "fecha_fin: datetime"
+        },
+        {
+          "id": "2e999688-3153-4b85-ad69-83b3b6d122f4",
+          "text": "id_responsable: integer"
+        },
+        {
+          "id": "b64c2799-aeff-4162-a694-aecfbe2b6f90",
+          "text": "lugar: varchar"
+        },
+        {
+          "id": "a154f203-d7e9-4e56-9f6a-7e941cd37f68",
+          "text": "municipio: varchar"
+        },
+        {
+          "id": "126dc254-bba7-47bd-a468-55b430f3403d",
+          "text": "comunidad: varchar"
+        },
+        {
+          "id": "61961011-4aa9-4b78-9441-e17cbbaee3f7",
+          "text": "tipo: enum"
+        }
+      ],
+      "x": 1176.7966178126983,
+      "y": -225.1491024695835
+    }
+  ],
+  "links": [
+    {
+      "id": "611d08aa-2974-40c9-b0a4-4a34c5de117b",
+      "from": "be7f1705-987f-4240-a582-6e5e6e64a4c5",
+      "fromProp": "3d0a096d-0197-4ff7-8e22-5d3e4faa4be0",
+      "to": "d0afb08c-6f7b-4d1a-b08d-ec1e057ab123",
+      "toProp": "f5347566-9f2a-49a7-8164-f48c6975d93d"
+    },
+    {
+      "id": "ceafb23e-7be2-43a6-8f9d-e22c3249ee2c",
+      "from": "02e5f5f0-bd7f-4f4b-bf7a-9a28e40ef0a2",
+      "fromProp": "d261bd32-9595-48e8-bb83-4591221ff266",
+      "to": "9047dbfa-8325-42fd-93a5-4b4d41b1ff19",
+      "toProp": "2aad852a-bda3-436d-b3d8-034dd29606e3"
+    },
+    {
+      "id": "c9a7abdf-799c-40ee-9eb2-ef1b9e285cc0",
+      "from": "3eb6cc54-93b2-4f59-a16d-70102d4abf35",
+      "fromProp": "e38d994a-9716-4fc3-ad2f-868aa9051329",
+      "to": "02e5f5f0-bd7f-4f4b-bf7a-9a28e40ef0a2",
+      "toProp": "d261bd32-9595-48e8-bb83-4591221ff266"
+    },
+    {
+      "id": "54bfaf2a-83a6-4ed6-ad6e-9b74537a3261",
+      "from": "d0afb08c-6f7b-4d1a-b08d-ec1e057ab123",
+      "fromProp": "f5347566-9f2a-49a7-8164-f48c6975d93d",
+      "to": "3eb6cc54-93b2-4f59-a16d-70102d4abf35",
+      "toProp": "ce3756f9-cefa-4ca2-a524-2a15451e12a6"
+    },
+    {
+      "id": "381a37d1-378e-4599-9803-1bc68f8a638e",
+      "from": "9047dbfa-8325-42fd-93a5-4b4d41b1ff19",
+      "fromProp": "6a02f8d2-6c08-4ab6-8376-8e4be303306c",
+      "to": "01d9154f-76b6-4189-b9c9-f486d146b28b",
+      "toProp": "72fe6c74-508c-491c-b36b-c08723a8c621"
+    },
+    {
+      "id": "b73637fb-39fa-4631-a80f-b63d62885b45",
+      "from": "d0afb08c-6f7b-4d1a-b08d-ec1e057ab123",
+      "fromProp": "f5347566-9f2a-49a7-8164-f48c6975d93d",
+      "to": "01d9154f-76b6-4189-b9c9-f486d146b28b",
+      "toProp": "2e999688-3153-4b85-ad69-83b3b6d122f4"
+    }
+  ]
+}
