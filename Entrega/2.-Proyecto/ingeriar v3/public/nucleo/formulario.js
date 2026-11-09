@@ -18,6 +18,7 @@ class IngeriarFormulario {
         this.formulario = null;
         this.ultimoElementoActivo = null;
         this.controlEducandos = null;
+        this.controlSecciones = null;
 
         this.modal.querySelector(".modal-cerrar")
             .addEventListener("click", () => this.cerrar());
@@ -31,13 +32,19 @@ class IngeriarFormulario {
     }
 
     mostrar(registro = null, clavePrimaria = "id") {
+        this.modal.classList.remove("modal-asistencia");
         this.tabla = tablaActual;
         this.clavePrimaria = clavePrimaria || "id";
         this.ultimoElementoActivo = document.activeElement;
         this.controlEducandos = null;
+        this.controlSecciones = null;
         return this.obtenerColumnas().then((columnas) => {
             const columnasEditables = columnas.filter(
-                (columna) => columna.pk === 0
+                (columna) => columna.pk === 0 &&
+                    !(this.tabla === "facturas" &&
+                        columna.name === "imagen_factura") &&
+                    !(this.tabla === "eventos" &&
+                        columna.name === "seccion")
             );
             this.contenedor.innerHTML = "";
             let titulo = document.createElement("h2");
@@ -48,9 +55,16 @@ class IngeriarFormulario {
             this.contenedor.appendChild(titulo);
 
             this.formulario = document.createElement("form");
-            this.formulario.className = "formulario";
+            this.formulario.className =
+                "formulario vista-superficie vista-formulario";
             const controlEducandos = this.tabla === "usuarios"
                 ? this.crearControlEducandos(registro)
+                : Promise.resolve(null);
+            const controlImagenFactura = this.tabla === "facturas"
+                ? this.crearControlImagenFactura()
+                : Promise.resolve(null);
+            const controlSecciones = this.tabla === "eventos"
+                ? this.crearControlSecciones(registro)
                 : Promise.resolve(null);
             let acciones = document.createElement("div");
             acciones.className = "acciones-formulario";
@@ -69,7 +83,9 @@ class IngeriarFormulario {
                 ...columnasEditables.map((columna) =>
                     this.crearControl(columna, registro)
                 ),
-                controlEducandos
+                controlEducandos,
+                controlImagenFactura,
+                controlSecciones
             ]).then((controles) => {
                 controles.forEach((control) =>
                     control && this.formulario.appendChild(control)
@@ -167,7 +183,13 @@ class IngeriarFormulario {
 
         return opciones.then((valores) => {
             if (!columna.required) {
-                valores.unshift({valor: "", etiqueta: "-- Sin asignar --"});
+                valores.unshift({
+                    valor: "",
+                    etiqueta: this.tabla === "eventos" &&
+                        columna.name === "seccion"
+                        ? "Todas"
+                        : "-- Sin asignar --"
+                });
             }
 
             valores.forEach((opcion) => {
@@ -176,14 +198,73 @@ class IngeriarFormulario {
                 elemento.textContent = opcion.etiqueta;
                 control.appendChild(elemento);
             });
-            control.value = registro?.[columna.name] !== undefined
-                ? (["1", 1, true, "true"].includes(registro[columna.name])
+            const valorActual = registro?.[columna.name]
+                ?? columna.defaultValue;
+            const valorInicial = columna.tipo_formulario === "BOOLEAN"
+                ? (["1", 1, true, "true"].includes(valorActual)
                     ? "1" : "0")
-                : columna.tipo_formulario === "BOOLEAN"
-                    ? "0"
-                    : (registro?.[columna.name] ?? columna.defaultValue ?? "");
+                : (valorActual ?? (columna.required
+                    ? valores[0]?.valor ?? ""
+                    : ""));
+            control.value = valorInicial;
             return instancia;
         });
+    }
+
+    crearControlImagenFactura() {
+        const grupo = document.createElement("div");
+        grupo.className = "campo";
+        const etiqueta = document.createElement("label");
+        etiqueta.textContent = "Imagen de la factura";
+        const control = document.createElement("input");
+        control.type = "file";
+        control.name = "imagen_factura";
+        control.accept = "image/jpeg,image/png,image/webp";
+        grupo.append(etiqueta, control);
+        return Promise.resolve(grupo);
+    }
+
+    crearControlSecciones(registro) {
+        const secciones = ["colonia", "manada", "tropa", "posta", "rutas"];
+        const convocadas = new Set(registro?.convocatorias || []);
+        const grupo = document.createElement("fieldset");
+        grupo.className = "campo campo-secciones";
+        const leyenda = document.createElement("legend");
+        leyenda.textContent = "Secciones convocadas";
+        grupo.appendChild(leyenda);
+
+        const todas = document.createElement("label");
+        todas.className = "opcion-seccion";
+        const todasControl = document.createElement("input");
+        todasControl.type = "checkbox";
+        todasControl.name = "convocatorias_todas";
+        todasControl.checked = registro === null || convocadas.size === 0;
+        todas.append(todasControl, " Todas las secciones");
+        grupo.appendChild(todas);
+
+        secciones.forEach((seccion) => {
+            const opcion = document.createElement("label");
+            opcion.className = "opcion-seccion";
+            const control = document.createElement("input");
+            control.type = "checkbox";
+            control.name = "convocatorias";
+            control.value = seccion;
+            control.checked = convocadas.has(seccion);
+            control.disabled = todasControl.checked;
+            opcion.append(control, " " + this.utilidades.capitalizar(seccion));
+            grupo.appendChild(opcion);
+        });
+        todasControl.addEventListener("change", () => {
+            grupo.querySelectorAll('input[name="convocatorias"]')
+                .forEach((control) => {
+                    control.disabled = todasControl.checked;
+                    if (todasControl.checked) {
+                        control.checked = false;
+                    }
+                });
+        });
+        this.controlSecciones = grupo;
+        return Promise.resolve(grupo);
     }
 
     obtenerRelacion(columna) {
@@ -302,10 +383,34 @@ class IngeriarFormulario {
                 this.controlEducandos.selectedOptions
             ).map((opcion) => Number(opcion.value));
         }
+        if (this.controlSecciones) {
+            const todas = this.controlSecciones.querySelector(
+                '[name="convocatorias_todas"]'
+            ).checked;
+            const seleccionadas = Array.from(
+                this.controlSecciones.querySelectorAll(
+                    '[name="convocatorias"]'
+                )
+            ).filter((control) => control.checked);
+            if (!todas && seleccionadas.length === 0) {
+                alert("Selecciona al menos una sección o marca Todas.");
+                return Promise.resolve();
+            }
+            datos.convocatorias = todas
+                ? []
+                : seleccionadas
+                    .map((control) => control.value);
+        }
 
         let formData = new FormData();
         formData.append("tabla", this.tabla);
         formData.append("datos", JSON.stringify(datos));
+        if (this.tabla === "facturas") {
+            const imagen = this.formulario.elements.imagen_factura.files[0];
+            if (imagen) {
+                formData.append("imagen_factura", imagen);
+            }
+        }
         let ruta = "crear";
         if (registro !== null) {
             ruta = "editar";

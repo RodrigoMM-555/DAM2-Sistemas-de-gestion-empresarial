@@ -59,6 +59,28 @@ class IngeriarCalendario {
         }).sort((a, b) => a.fecha_inicio.localeCompare(b.fecha_inicio));
     }
 
+    claseTipoEvento(evento) {
+        const tipo = String(evento.tipo || "otro")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "");
+        const tiposConColor = [
+            "reunion-de-familias",
+            "sabado",
+            "festival",
+            "excursion",
+            "campamento",
+            "taller",
+            "convivencia",
+            "actividad"
+        ];
+        return "cal-evento-" + (
+            tiposConColor.includes(tipo) ? tipo : "otro"
+        );
+    }
+
     render() {
         const año = this.fechaActual.getFullYear();
         const mes = this.fechaActual.getMonth();
@@ -66,6 +88,7 @@ class IngeriarCalendario {
         const diasMes = new Date(año, mes + 1, 0).getDate();
         const hoy = this.formatearFecha(new Date());
 
+        this.contenedor.className = "vista vista-calendario";
         this.contenedor.replaceChildren();
 
         const cabecera = document.createElement("div");
@@ -117,7 +140,7 @@ class IngeriarCalendario {
             this.obtenerEventos(fecha).forEach((evento) => {
                 const elemento = document.createElement("button");
                 elemento.type = "button";
-                elemento.className = "cal-evento";
+                elemento.className = "cal-evento " + this.claseTipoEvento(evento);
                 elemento.textContent = evento.nombre || "Evento";
                 elemento.title = this.esTutor()
                     ? "Indicar asistencia"
@@ -173,7 +196,7 @@ class IngeriarCalendario {
 
     renderizarSeleccion() {
         const panel = document.createElement("div");
-        panel.className = "detalle-calendario";
+        panel.className = "detalle-calendario vista-superficie";
         const titulo = document.createElement("h3");
         titulo.textContent = this.fechaActual.toLocaleDateString("es-ES", {
             month: "long",
@@ -192,7 +215,7 @@ class IngeriarCalendario {
 
         this.obtenerEventosMes().forEach((evento) => {
             const fila = document.createElement("div");
-            fila.className = "detalle-evento";
+            fila.className = "detalle-evento " + this.claseTipoEvento(evento);
             const nombre = document.createElement("span");
             nombre.textContent = evento.nombre || "Evento";
             const accion = document.createElement("button");
@@ -268,6 +291,37 @@ class IngeriarCalendario {
             titulo.textContent = "Asistencia: " + evento.nombre;
             this.formulario.contenedor.appendChild(titulo);
 
+            this.formulario.modal.classList.add("modal-asistencia");
+
+            const informacion = document.createElement("div");
+            informacion.className = "informacion-evento vista-superficie";
+            const datosEvento = [
+                ["Responsable", evento.responsable_nombre],
+                ["Fecha de inicio", this.formatearFechaEvento(evento.fecha_inicio)],
+                ["Fecha de fin", this.formatearFechaEvento(evento.fecha_fin)],
+                ["Lugar", evento.lugar],
+                ["Municipio", evento.municipio],
+                ["Provincia", evento.comunidad],
+                ["Tipo", evento.tipo],
+                ["Secciones convocadas", evento.convocatorias?.length
+                    ? evento.convocatorias.join(", ")
+                    : "Todas"]
+            ];
+            datosEvento.forEach(([etiqueta, valor]) => {
+                const dato = document.createElement("div");
+                dato.className = "dato-evento";
+                const nombre = document.createElement("span");
+                nombre.className = "dato-evento-etiqueta";
+                nombre.textContent = etiqueta;
+                const contenido = document.createElement("strong");
+                contenido.textContent = valor || "Sin indicar";
+                dato.append(nombre, contenido);
+                informacion.appendChild(dato);
+            });
+            this.formulario.contenedor.appendChild(informacion);
+
+            const contenedorTabla = document.createElement("div");
+            contenedorTabla.className = "contenedor-tabla-asistencias";
             const tabla = document.createElement("table");
             tabla.className = "tabla-asistencias";
             const cabecera = document.createElement("thead");
@@ -282,13 +336,14 @@ class IngeriarCalendario {
             tabla.appendChild(cabecera);
             const cuerpo = document.createElement("tbody");
             tabla.appendChild(cuerpo);
-            this.formulario.contenedor.appendChild(tabla);
+            contenedorTabla.appendChild(tabla);
+            this.formulario.contenedor.appendChild(contenedorTabla);
             const eventoPasado = this.eventoPasado(evento);
             if (eventoPasado) {
                 const aviso = document.createElement("p");
                 aviso.textContent = "Este evento ya ha terminado; solo puedes consultar la información.";
                 aviso.className = "aviso-asistencia";
-                this.formulario.contenedor.insertBefore(aviso, tabla);
+                this.formulario.contenedor.insertBefore(aviso, contenedorTabla);
             }
 
             asistencias.forEach((asistencia) => {
@@ -374,6 +429,7 @@ class IngeriarCalendario {
                                     throw new Error(mensaje);
                                 });
                             }
+
                             asistencia.archivo_entrega = true;
                             actualizarEntrega();
                         }).catch((error) => {
@@ -395,5 +451,18 @@ class IngeriarCalendario {
                 cuerpo.appendChild(fila);
             });
         });
+    }
+
+    formatearFechaEvento(valor) {
+        if (!valor) {
+            return "Sin indicar";
+        }
+        const fecha = new Date(String(valor).replace(" ", "T"));
+        return Number.isNaN(fecha.getTime())
+            ? String(valor)
+            : fecha.toLocaleString("es-ES", {
+                dateStyle: "medium",
+                timeStyle: "short"
+            });
     }
 }

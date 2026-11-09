@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS facturas (
     precio DECIMAL(10, 2) NOT NULL,
     categoria enum('envíos', 'comida', 'material', 'gasolina', 'otros', 'agua', 'luz', 'gas') NOT NULL,
     estado VARCHAR(50) NOT NULL,
+    imagen_factura VARCHAR(255) NULL,
     CONSTRAINT fk_facturas_responsable
         FOREIGN KEY (responsable_id) REFERENCES usuarios(id)
         ON DELETE RESTRICT ON UPDATE CASCADE
@@ -61,6 +62,14 @@ CREATE TABLE IF NOT EXISTS eventos (
     circular BOOLEAN NOT NULL DEFAULT FALSE,
     FOREIGN KEY (id_responsable) REFERENCES usuarios(id)
         ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS eventos_secciones (
+    id_evento INT UNSIGNED NOT NULL,
+    seccion ENUM('colonia', 'manada', 'tropa', 'posta', 'rutas') NOT NULL,
+    PRIMARY KEY (id_evento, seccion),
+    FOREIGN KEY (id_evento) REFERENCES eventos(id)
+        ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS educandos_asistencias (

@@ -1,4 +1,25 @@
 {
-	"nombre":"nombre_grupo",
-    "color":"darkred"
+    "nombre_grupo": "Nombre del grupo",
+    "logo_archivo": "",
+    "color": "#8b0000",
+    "color_secundario": "#000000",
+    "modo_oscuro": false,
+    "cif": "",
+    "direccion": "",
+    "municipio": "",
+    "provincia": "",
+    "telefono": "",
+    "correo": "",
+    "coordinador": "",
+    "nombre_rol_administrador": "Administrador",
+    "nombre_rol_scouter": "Monitor",
+    "nombre_rol_tutor": "Tutor",
+    "formato_nombre": "nombre_apellidos",
+    "mostrar_educandos_sin_seccion": true,
+    "permitir_asistencia_pasada": false,
+    "tamano_maximo_archivos_mb": 10,
+    "formatos_entrega": "pdf, jpg, png, docx",
+    "categorias_facturas": "envíos, comida, material, gasolina, otros, agua, luz, gas",
+    "tipos_evento": "reunión de familias, sabado, festival, excursion, otro",
+    "secciones": "colonia, manada, tropa, posta, rutas"
 }

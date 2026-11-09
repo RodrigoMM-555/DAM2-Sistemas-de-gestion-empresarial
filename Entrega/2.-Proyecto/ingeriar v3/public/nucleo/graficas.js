@@ -289,43 +289,4 @@ class DarkorangeGraficas {
         });
     }
 
-    static frecuencia(registros, columna) {
-        const mapa = new Map();
-
-        registros.forEach((registro) => {
-            const valor = String(registro[columna] ?? "(vacío)");
-            mapa.set(valor, (mapa.get(valor) || 0) + 1);
-        });
-
-        return [...mapa]
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 10);
-    }
-
-    static campo(registros, columnas) {
-        const candidatos = columnas.filter((columna) =>
-            !columna.pk &&
-            !["id", "identificador"].includes(columna.name) &&
-            !/_id$/.test(columna.name)
-        );
-
-        const campoConCategorias = candidatos.find((columna) => {
-            const valores = new Set(
-                registros.map((registro) => registro[columna.name])
-            );
-
-            return valores.size > 1 &&
-                valores.size <= Math.max(12, registros.length * 0.65);
-        });
-
-        return campoConCategorias ||
-            candidatos.find((columna) => {
-                const valores = new Set(
-                    registros.map((registro) => registro[columna.name])
-                );
-
-                return valores.size > 1;
-            }) ||
-            candidatos[0];
-    }
 }

@@ -16,6 +16,92 @@
     --sombra: 0 4px 14px rgba(0,0,0,0.08);
 }
 
+.dashboard-bloque{
+    margin-bottom:22px;
+    padding:20px;
+    border:1px solid var(--color_borde);
+    border-radius:var(--radio);
+    background:var(--color_superficie);
+    box-shadow:var(--sombra);
+}
+
+.dashboard-bloque h3{
+    margin:0 0 16px;
+}
+
+.dashboard-resumen{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:14px;
+}
+
+.dashboard-resumen h3{
+    grid-column:1 / -1;
+}
+
+.dashboard-info-tarjeta,
+.dashboard-pendientes article{
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+    min-width:0;
+    padding:14px;
+    border-left:4px solid var(--color_corporativo);
+    background:var(--color_fondo);
+}
+
+.dashboard-info-tarjeta strong,
+.dashboard-pendientes strong{
+    color:var(--color_secundario);
+    font-size:13px;
+}
+
+.dashboard-info-tarjeta b,
+.dashboard-pendientes b{
+    color:var(--color_corporativo);
+    font-size:20px;
+}
+
+.dashboard-info-tarjeta span{
+    overflow-wrap:anywhere;
+    color:var(--color_secundario);
+    font-size:12px;
+}
+
+.tabla-dashboard{
+    width:100%;
+    margin:0;
+}
+
+.dashboard-pendientes{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:14px;
+    margin-bottom:18px;
+}
+
+.mini-calendario{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:10px;
+}
+
+.mini-calendario div{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    padding:12px;
+    border:1px solid var(--color_borde);
+    border-radius:var(--radio);
+    background:var(--color_fondo);
+}
+
+.mini-calendario span{
+    color:var(--color_secundario);
+    font-size:13px;
+    text-align:left;
+}
+
 
 *{
     box-sizing:border-box;
@@ -50,7 +136,7 @@ body{
 }
 
 
-/* CABECERA */
+/* ==================== CABECERA ==================== */
 
 header{
 
@@ -95,10 +181,38 @@ header div{
     gap: 5px;
 }
 
+#logo-grupo{
+    width:42px;
+    height:42px;
+    margin-right:8px;
+    border-radius:50%;
+    object-fit:cover;
+}
+
+.acciones-cabecera{
+    align-items:center;
+    justify-content:flex-end;
+    gap:14px;
+}
+
+.acciones-cabecera .botonConfiguracion{
+    order:2;
+}
+
 .sesion-actual{
     align-items:center;
     gap:10px;
     font-size:14px;
+}
+
+.vista input[type="checkbox"],
+.vista input[type="radio"],
+.formulario input[type="checkbox"],
+.formulario input[type="radio"]{
+    width:auto;
+    min-width:0;
+    padding:0;
+    accent-color:var(--color_corporativo);
 }
 
 .avatar-usuario{
@@ -169,6 +283,8 @@ header div{
     }
 }
 
+/* ==================== ACCESO Y ASISTENCIAS ==================== */
+
 .pantalla-login{
     display:flex;
     align-items:center;
@@ -182,9 +298,6 @@ header div{
     gap:10px;
     width:min(360px, calc(100% - 40px));
     padding:28px;
-    border-radius:var(--radio);
-    background:var(--color_superficie);
-    box-shadow:var(--sombra);
 }
 
 .formulario-login input{
@@ -203,9 +316,6 @@ header div{
     gap:12px;
     margin-top:18px;
     padding:16px;
-    border:1px solid var(--color_borde);
-    border-radius:var(--radio);
-    background:var(--color_superficie);
 }
 
 .fila-asistencia{
@@ -219,6 +329,7 @@ header div{
     width:100%;
     border-collapse:collapse;
     margin-top:16px;
+    overflow:hidden;
 }
 
 .tabla-asistencias th,
@@ -309,7 +420,7 @@ a.activo .icono-modulos{
 
 }
 
-/* CONTENEDOR PRINCIPAL */
+/* ==================== ESTRUCTURA PRINCIPAL ==================== */
 
 main{
     flex:1;
@@ -320,9 +431,9 @@ main{
 }
 
 
-/* MENÚS */
+/* ==================== MENÚS Y NAVEGACIÓN ==================== */
 
-/* SEPARADORES REDIMENSIONABLES */
+/* Separadores redimensionables */
 
 .separador-redimensionable {
     flex: 0 0 5px;
@@ -405,7 +516,7 @@ nav a.activo{
 }
 
 
-/* CONTENIDO */
+/* ==================== CONTENIDO Y VISTAS ==================== */
 
 section{
     flex:1;
@@ -426,8 +537,98 @@ section h2{
     font-weight:600;
 }
 
+/* VISTAS */
 
-/* CABECERA DE TABLA */
+.vista{
+    min-width:0;
+}
+
+.vista-superficie{
+    border:1px solid var(--color_borde);
+    border-radius:var(--radio);
+    background:var(--color_superficie);
+    box-shadow:var(--sombra);
+}
+
+html[data-modo-oscuro="true"]{
+    --color_fondo:#111827;
+    --color_superficie:#1f2937;
+    --color_texto:#f9fafb;
+    --color_borde:#4b5563;
+    --color_secundario:#d1d5db;
+    --sombra:0 4px 16px rgba(0,0,0,.35);
+    color-scheme:dark;
+}
+
+html[data-modo-oscuro="true"] .campo label,
+html[data-modo-oscuro="true"] .titulo-configuracion{
+    color:var(--color_texto);
+}
+
+html[data-modo-oscuro="true"] table td,
+html[data-modo-oscuro="true"] .sin-datos{
+    background:var(--color_superficie);
+    color:var(--color_texto);
+}
+
+html[data-modo-oscuro="true"] .tabla-asistencias tbody tr:not(
+    [class^="fila-seccion-"]
+){
+    background:var(--color_superficie);
+}
+
+.vista input,
+.vista select,
+.vista textarea,
+.formulario input,
+.formulario select,
+.formulario textarea,
+.formulario-login input{
+    font-family:inherit;
+    color:var(--color_texto);
+    border:1px solid var(--color_borde);
+    border-radius:7px;
+    background:var(--color_superficie);
+    font-size:14px;
+}
+
+.vista input,
+.vista select,
+.vista textarea,
+.formulario input,
+.formulario select,
+.formulario textarea{
+    padding:11px 13px;
+}
+
+.vista input:focus,
+.vista select:focus,
+.vista textarea:focus,
+.formulario input:focus,
+.formulario select:focus,
+.formulario textarea:focus,
+.formulario-login input:focus{
+    border-color:var(--color_corporativo);
+    outline:none;
+    box-shadow:
+        0 0 0 3px
+        color-mix(
+            in srgb,
+            var(--color_corporativo),
+            transparent 80%
+        );
+}
+
+.vista-tabla .cabecera-tabla,
+.vista-dashboard .cabecera-dashboard{
+    min-height:58px;
+    margin-bottom:20px;
+}
+
+
+/* ==================== TABLAS ==================== */
+
+/* Cabeceras, filtros y exportación */
 
 .filtros-tabla{
     display: flex;
@@ -454,7 +655,8 @@ section h2{
 }
 
 .selector-columna{
-    max-width: 100px;
+    min-width:150px;
+    max-width:220px;
 }
 
 
@@ -523,8 +725,6 @@ section h2{
     color:white;
 }
 
-
-/* TABLA */
 
 table{
     width:100%;
@@ -602,6 +802,41 @@ table tbody tr[class^="fila-seccion-"]:hover{
     font-weight:400;
 }
 
+.opcion-seccion input[type="checkbox"]{
+    flex:0 0 auto;
+    width:17px;
+    height:17px;
+    margin:0;
+}
+
+.acciones-formulario{
+    grid-column:1 / -1;
+    position:sticky;
+    bottom:0;
+    z-index:1;
+    margin-top:4px;
+    padding:14px 0 0;
+    background:var(--color_superficie);
+}
+
+@media (max-width:700px){
+    .modal-dialogo{
+        width:calc(100% - 20px);
+        max-height:calc(100vh - 20px);
+        margin:10px auto;
+    }
+
+    .formulario{
+        grid-template-columns:1fr;
+        gap:0;
+        padding:18px;
+    }
+
+    .campo-secciones,
+    .acciones-formulario{
+        grid-column:auto;
+    }
+}
 .celda-seccion{
     text-decoration:none;
 }
@@ -611,11 +846,67 @@ table tbody tr td *{
     font-weight:400;
 }
 
-.tabla-asistencias tbody tr{
+.tabla-asistencias td{
+    min-width:150px;
+    padding:17px 18px;
+    vertical-align:middle;
+    line-height:1.45;
 }
 
-.tabla-asistencias td{
-    padding:14px 12px;
+.tabla-asistencias th{
+    padding:16px 18px;
+    background:var(--color_corporativo);
+    color:white;
+    text-align:left;
+    white-space:nowrap;
+}
+
+.tabla-asistencias tbody tr:not([class^="fila-seccion-"]){
+    background:var(--color_fondo);
+}
+
+.contenedor-tabla-asistencias{
+    width:100%;
+    overflow-x:auto;
+    border:1px solid var(--color_borde);
+    border-radius:var(--radio);
+    box-shadow:var(--sombra);
+}
+
+.contenedor-tabla-asistencias .tabla-asistencias{
+    min-width:980px;
+    margin:0;
+    border:0;
+    box-shadow:none;
+}
+
+.informacion-evento{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+    gap:12px;
+    margin-bottom:22px;
+    padding:18px;
+}
+
+.dato-evento{
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+    min-width:0;
+    padding:10px 12px;
+    border-left:3px solid var(--color_corporativo);
+    background:var(--color_fondo);
+}
+
+.dato-evento-etiqueta{
+    color:var(--color_secundario);
+    font-size:12px;
+    font-weight:600;
+    text-transform:uppercase;
+}
+
+.dato-evento strong{
+    overflow-wrap:anywhere;
 }
 
 .tabla-asistencias .opcion-asistencia{
@@ -642,10 +933,6 @@ table tbody tr td *{
     gap:10px;
     min-width:0;
     padding:10px;
-    border:1px solid var(--color_borde);
-    border-radius:10px;
-    background:var(--color_superficie);
-    box-shadow:0 2px 8px rgba(0,0,0,.06);
     transition:transform .15s, box-shadow .15s;
 }
 
@@ -687,24 +974,15 @@ table tbody tr td *{
     white-space:nowrap;
 }
 
-.fila-seccion-colonia td:nth-child(2),
-.fila-seccion-manada td:nth-child(2),
-.fila-seccion-tropa td:nth-child(2),
-.fila-seccion-posta td:nth-child(2),
-.fila-seccion-rutas td:nth-child(2){
+.celda-destacada{
     font-weight:600;
 }
 
 
-/* BOTONES */
+/* ==================== BOTONES ==================== */
 
 .boton{
     border:0;
-
-    /*
-    min-height: 40px;
-    min-width: 80px;
-    */
 
     border-radius:7px;
 
@@ -767,7 +1045,7 @@ table tbody tr td *{
 }
 
 
-/* ACCIONES DE TABLA */
+/* Acciones de tabla */
 
 .acciones{
     display:flex;
@@ -778,20 +1056,14 @@ table tbody tr td *{
 }
 
 
-/* FORMULARIOS */
+/* ==================== FORMULARIOS Y MODALES ==================== */
 
 .formulario{
-    max-width:700px;
-
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:0 22px;
+    max-width:900px;
     padding:25px;
-
-    background:white;
-
-    border:1px solid var(--color_borde);
-
-    border-radius:var(--radio);
-
-    box-shadow:var(--sombra);
 }
 
 .modal-formulario[hidden]{
@@ -813,7 +1085,7 @@ table tbody tr td *{
 
 .modal-dialogo{
     position:relative;
-    width:min(700px,calc(100% - 32px));
+    width:min(900px,calc(100% - 32px));
     max-height:calc(100vh - 32px);
     margin:16px auto;
     overflow:auto;
@@ -821,6 +1093,10 @@ table tbody tr td *{
     background:var(--color_superficie);
     box-shadow:0 12px 40px rgba(0,0,0,0.3);
     margin-top: 5%;
+}
+
+.modal-asistencia .modal-dialogo{
+    width:min(1100px,calc(100% - 32px));
 }
 
 .modal-cerrar{
@@ -848,7 +1124,11 @@ table tbody tr td *{
     max-width:none;
     border:0;
     box-shadow:none;
-    padding-top:unset;
+    padding:0;
+}
+
+#contenedor-formulario{
+    padding:25px;
 }
 
 body.modal-abierto{
@@ -856,17 +1136,14 @@ body.modal-abierto{
 }
 
 #modal-formulario-titulo{
-    margin-inline: 15px;
+    margin:0 35px 20px 0;
 }
 
 
 .campo{
     display:flex;
-
     flex-direction:column;
-
     gap:7px;
-
     margin-bottom:18px;
 }
 
@@ -879,38 +1156,42 @@ body.modal-abierto{
     color:#444;
 }
 
+.titulo-configuracion{
+    grid-column:1 / -1;
+    margin:10px 0 4px;
+    padding-bottom:6px;
+    border-bottom:1px solid var(--color_borde);
+}
 
-.campo input, select{
+.campo-secciones{
+    display:flex;
+    grid-column:1 / -1;
+    flex-wrap:wrap;
+    gap:10px 16px;
+    padding:14px;
+    border:1px solid var(--color_borde);
+    border-radius:var(--radio);
+}
+
+.campo-secciones legend{
     width:100%;
+    padding:0 6px;
+    font-weight:600;
+}
 
-    padding:11px 13px;
-
-    border:1px solid #d1d5db;
-
-    border-radius:7px;
-
-    font-family:inherit;
-
-    font-size:14px;
-
-    outline:none;
-
-    transition:
-        border-color 0.2s,
-        box-shadow 0.2s;
+.opcion-seccion{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    margin:0;
+    font-weight:400;
 }
 
 
-.campo input:focus{
-    border-color:var(--color_corporativo);
-
-    box-shadow:
-        0 0 0 3px
-        color-mix(
-            in srgb,
-            var(--color_corporativo),
-            transparent 80%
-        );
+.campo input,
+.campo select,
+.campo textarea{
+    width:100%;
 }
 
 
@@ -937,7 +1218,7 @@ body.modal-abierto{
     border-radius:var(--radio);
 }
 
-/* CALENDARIO */
+/* ==================== CALENDARIO ==================== */
 
 .cabecera-calendario{
     display:flex;
@@ -1025,6 +1306,55 @@ body.modal-abierto{
     cursor:pointer;
 }
 
+.cal-evento-reunion-de-familias,
+.detalle-evento.cal-evento-reunion-de-familias{
+    --color-evento: #2563eb;
+}
+
+.cal-evento-sabado,
+.detalle-evento.cal-evento-sabado{
+    --color-evento: #7c3aed;
+}
+
+.cal-evento-festival,
+.detalle-evento.cal-evento-festival{
+    --color-evento: #db2777;
+}
+
+.cal-evento-excursion,
+.detalle-evento.cal-evento-excursion{
+    --color-evento: #059669;
+}
+
+.cal-evento-campamento,
+.detalle-evento.cal-evento-campamento{
+    --color-evento: #d97706;
+}
+
+.cal-evento-taller,
+.detalle-evento.cal-evento-taller{
+    --color-evento: #0891b2;
+}
+
+.cal-evento-convivencia,
+.detalle-evento.cal-evento-convivencia{
+    --color-evento: #65a30d;
+}
+
+.cal-evento-actividad,
+.detalle-evento.cal-evento-actividad{
+    --color-evento: #4f46e5;
+}
+
+.cal-evento-otro,
+.detalle-evento.cal-evento-otro{
+    --color-evento: var(--color_corporativo);
+}
+
+.cal-evento{
+    background:var(--color-evento,var(--color_corporativo));
+}
+
 .contenedor-calendario{
     display:grid;
     grid-template-columns:minmax(0,1fr) 320px;
@@ -1044,10 +1374,6 @@ body.modal-abierto{
     gap:10px;
     min-height:100%;
     padding:16px;
-    border:1px solid var(--color_borde);
-    border-radius:var(--radio);
-    background:var(--color_superficie);
-    box-shadow:var(--sombra);
     flex-direction:column;
 
 }
@@ -1067,6 +1393,8 @@ body.modal-abierto{
     width:100%;
     padding-top:10px;
     border-top:1px solid var(--color_borde);
+    border-left:4px solid var(--color-evento,var(--color_corporativo));
+    padding-left:8px;
 }
 
 .detalle-evento span{
@@ -1098,12 +1426,27 @@ body.modal-abierto{
     .detalle-calendario{
         position:static;
     }
+
+    .dashboard-resumen{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+}
+
+@media (max-width:520px){
+    .dashboard-resumen,
+    .dashboard-pendientes{
+        grid-template-columns:1fr;
+    }
 }
 
 
-/* DASHBOARD */
+/* ==================== DASHBOARD ==================== */
 
 .cabecera-dashboard{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:20px;
     margin-bottom:20px;
 }
 
@@ -1140,7 +1483,22 @@ body.modal-abierto{
     transition:
         box-shadow 0.2s ease,
         border-color 0.2s ease;
+}
 
+.indicador:nth-child(1){
+    border-top:4px solid #2563eb;
+}
+
+.indicador:nth-child(2){
+    border-top:4px solid #059669;
+}
+
+.indicador:nth-child(3){
+    border-top:4px solid #d97706;
+}
+
+.indicador:nth-child(4){
+    border-top:4px solid #7c3aed;
 }
 
 .indicador:hover{
@@ -1184,14 +1542,16 @@ span{
     gap:20px;
 }
 
+.dashboard-graficas .grafica-card:first-child:last-child{
+    grid-column:1 / -1;
+    justify-self:center;
+    width:min(100%, 680px);
+}
+
 
 .grafica-card{
     min-width:0;
     padding:20px;
-    background:var(--color_superficie);
-    border:1px solid var(--color_borde);
-    border-radius:var(--radio);
-    box-shadow:var(--sombra);
     transition:
         box-shadow 0.2s ease,
         border-color 0.2s ease;
@@ -1260,8 +1620,22 @@ span{
     }
 }
 
+@media(max-width:700px){
+    .cabecera-dashboard{
+        flex-direction:column;
+    }
 
-/* RESPONSIVE */
+    .cabecera-dashboard .controles-exportacion{
+        width:100%;
+    }
+
+    .dashboard-graficas{
+        grid-template-columns:1fr;
+    }
+}
+
+
+/* ==================== RESPONSIVE ==================== */
 
 @media(max-width:900px){
 

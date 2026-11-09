@@ -18,7 +18,10 @@ const tabla = new IngeriarTabla({
     formulario,
     exportacion
 });
-const configuracion = new IngeriarConfiguracion({utilidades});
+const configuracion = new IngeriarConfiguracion({
+    utilidades,
+    cabecera: "#acciones-cabecera"
+});
 const graficas = DarkorangeGraficas;
 const dashboard = new IngeriarDashboard({
     utilidades,
@@ -61,7 +64,9 @@ function crearEnlaceCalendario() {
         evento.preventDefault();
         marcarEnlaceActivo(enlace);
         vistaActual = "calendario";
-        calendario.cargar("eventos");
+        calendario.cargar("eventos").catch((error) => {
+            document.querySelector("section").textContent = error.message;
+        });
     };
     document.querySelector("#entidades").prepend(enlace);
 }

@@ -22,6 +22,7 @@ facturas
 - precio DECIMAL(10,2) NOT NULL
 - categoria enum('envíos', 'comida', 'material', 'gasolina', 'otros', 'agua', 'luz', 'gas') NOT NULL
 - estado VARCHAR(50) NOT NULL
+- imagen_factura VARCHAR(255) NULL
 
 usuarios_educandos
 - id_usuario INT UNSIGNED NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE
@@ -38,6 +39,11 @@ eventos
 - comunidad VARCHAR(100)
 - tipo VARCHAR(50) NOT NULL
 - circular BOOLEAN NOT NULL DEFAULT FALSE
+
+eventos_secciones
+- id_evento INT UNSIGNED NOT NULL REFERENCES eventos(id) ON DELETE CASCADE
+- seccion ENUM('colonia', 'manada', 'tropa', 'posta', 'rutas') NOT NULL
+- PRIMARY KEY (id_evento, seccion)
 
 educandos_asistencias
 - id_educando INT UNSIGNED NOT NULL REFERENCES educandos(id) ON DELETE CASCADE

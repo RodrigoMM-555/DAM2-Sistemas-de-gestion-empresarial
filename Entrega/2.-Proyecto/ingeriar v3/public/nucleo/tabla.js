@@ -22,6 +22,7 @@ class IngeriarTabla {
     render(datos) {
         const registros = datos.registros || [];
         const columnas = datos.columnas || [];
+        this.contenedor.className = "vista vista-tabla";
         this.contenedor.innerHTML = "";
 
         let cabecera = document.createElement("div");
@@ -83,7 +84,9 @@ class IngeriarTabla {
         }
 
         let nombres = Object.keys(registros[0]).filter((nombre) =>
-            nombre !== "id" || usuarioActual?.rol === "administrador"
+            (nombre !== "id" || usuarioActual?.rol === "administrador") &&
+            !(this.tabla === "facturas" &&
+                ["responsable_id", "imagen_factura"].includes(nombre))
         );
         let selector = document.createElement("select");
         selector.className = "selector-columna";
@@ -95,7 +98,9 @@ class IngeriarTabla {
         nombres.forEach((nombre, indice) => {
             let opcion = document.createElement("option");
             opcion.value = indice;
-            opcion.textContent = this.utilidades.capitalizar(nombre);
+            opcion.textContent = nombre === "responsable_nombre"
+                ? "Responsable"
+                : this.utilidades.capitalizar(nombre);
             selector.appendChild(opcion);
         });
         controlesFiltro.append(selector, buscador);
@@ -109,13 +114,39 @@ class IngeriarTabla {
 
         nombres.forEach((nombre, indice) => {
             let th = document.createElement("th");
-            th.textContent = this.utilidades.capitalizar(nombre) + "  ↕";
+            th.textContent = (nombre === "responsable_nombre"
+                ? "Responsable"
+                : this.utilidades.capitalizar(nombre)) + "  ↕";
             let ascendente = true;
             th.onclick = () => {
                 let filas = Array.from(cuerpo.querySelectorAll("tr"));
                 filas.sort((filaA, filaB) => {
                     let valorA = filaA.children[indice].textContent;
                     let valorB = filaB.children[indice].textContent;
+                    if (this.tabla === "educandos" && nombre === "seccion") {
+                        const ordenSecciones = [
+                            "colonia",
+                            "manada",
+                            "tropa",
+                            "posta",
+                            "rutas"
+                        ];
+                        const posicionA = ordenSecciones.indexOf(
+                            valorA.toLowerCase()
+                        );
+                        const posicionB = ordenSecciones.indexOf(
+                            valorB.toLowerCase()
+                        );
+                        const finalA = posicionA === -1
+                            ? ordenSecciones.length
+                            : posicionA;
+                        const finalB = posicionB === -1
+                            ? ordenSecciones.length
+                            : posicionB;
+                        return ascendente
+                            ? finalA - finalB
+                            : finalB - finalA;
+                    }
                     return ascendente
                         ? valorA.localeCompare(valorB)
                         : valorB.localeCompare(valorA);
@@ -137,11 +168,18 @@ class IngeriarTabla {
             if (this.tabla === "educandos" && registro.seccion) {
                 fila.className = "fila-seccion-" + registro.seccion;
             }
-            nombres.forEach((nombre) => {
+            nombres.forEach((nombre, indice) => {
                 let celda = document.createElement("td");
                 celda.textContent = registro[nombre] ?? "";
+                const columnaDestacada = usuarioActual?.rol === "tutor"
+                    ? 0
+                    : 1;
+                if (this.tabla === "educandos" &&
+                    indice === columnaDestacada) {
+                    celda.classList.add("celda-destacada");
+                }
                 if (nombre === "seccion" && registro.seccion) {
-                    celda.className = "celda-seccion";
+                    celda.classList.add("celda-seccion");
                     celda.textContent = registro.seccion;
                 }
                 fila.appendChild(celda);
@@ -149,9 +187,9 @@ class IngeriarTabla {
 
             let celdaAcciones = document.createElement("td");
             celdaAcciones.className = "acciones";
-            if (this.tabla === "educandos" && usuarioActual?.rol === "tutor") {
+            if (this.tabla === "educandos") {
                 let info = document.createElement("button");
-                info.textContent = "Ver circulares";
+                info.textContent = "Ver documentación";
                 info.className = "boton boton-editar";
                 info.onclick = () => this.mostrarDocumentosEducando(registro);
                 celdaAcciones.appendChild(info);
@@ -180,6 +218,7 @@ class IngeriarTabla {
             cuerpo.appendChild(fila);
         });
 
+        tabla.classList.add("vista-superficie");
         this.contenedor.appendChild(tabla);
         this.configurarFiltros(selector, buscador, cuerpo);
     }
@@ -206,7 +245,7 @@ class IngeriarTabla {
             }
             documentos.forEach((documento) => {
                 const fila = document.createElement("article");
-                fila.className = "documento-circular";
+                fila.className = "documento-circular vista-superficie";
                 const vista = document.createElement("div");
                 vista.className = "documento-vista";
                 const enlace = document.createElement("a");

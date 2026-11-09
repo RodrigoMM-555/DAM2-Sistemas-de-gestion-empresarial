@@ -6,6 +6,16 @@ require_once __DIR__ . '/../auth/sesion.php';
 
 $db = obtenerConexion();
 $ruta = $_GET['ruta'] ?? '';
+
+function tablaExiste(PDO $db, string $tabla): bool
+{
+    $stmt = $db->prepare(
+        'SELECT 1 FROM information_schema.TABLES
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?'
+    );
+    $stmt->execute([$tabla]);
+    return (bool) $stmt->fetchColumn();
+}
 $usuario = exigirAutenticacion();
 
 const CIRCULAR_FIJA = 'biblioteca/circular1.pdf';
@@ -27,6 +37,41 @@ function comprobarTabla(PDO $db, string $tabla): void
 {
     if (!identificadorValido($tabla)) {
         responder(['error' => 'Nombre de tabla no válido']);
+    }
+
+    function guardarImagenFactura(PDO $db, int $facturaId): void
+    {
+        $imagen = $_FILES['imagen_factura'] ?? null;
+        if (!$imagen || $imagen['error'] === UPLOAD_ERR_NO_FILE) {
+            return;
+        }
+        if ($imagen['error'] !== UPLOAD_ERR_OK || $imagen['size'] > 10 * 1024 * 1024) {
+            responder(['error' => 'La imagen de la factura no es válida o supera los 10 MB'], 400);
+        }
+
+        $permitidos = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+        ];
+        $mime = (new finfo(FILEINFO_MIME_TYPE))->file($imagen['tmp_name']);
+        if (!isset($permitidos[$mime])) {
+            responder(['error' => 'Solo se aceptan imágenes JPEG, PNG o WebP'], 415);
+        }
+
+        $directorio = __DIR__ . '/../../storage/facturas';
+        if (!is_dir($directorio) && !mkdir($directorio, 0750, true)) {
+            responder(['error' => 'No se pudo preparar la carpeta de facturas'], 500);
+        }
+        $nombre = 'factura-' . $facturaId . '-' . bin2hex(random_bytes(12))
+            . '.' . $permitidos[$mime];
+        if (!move_uploaded_file($imagen['tmp_name'], $directorio . '/' . $nombre)) {
+            responder(['error' => 'No se pudo guardar la imagen de la factura'], 500);
+        }
+
+        $db->prepare(
+            'UPDATE facturas SET imagen_factura = ? WHERE id = ?'
+        )->execute([$nombre, $facturaId]);
     }
 
     $stmt = $db->prepare(
@@ -142,6 +187,259 @@ switch ($ruta) {
     case 'usuario_actual':
         responder(['usuario' => $usuario]);
 
+    case 'dashboard':
+        $consultar = function (string $sql, array $parametros = []) use ($db): array {
+            $stmt = $db->prepare($sql);
+            $stmt->execute($parametros);
+            return $stmt->fetch() ?: [];
+        };
+        $consultarTodos = function (string $sql, array $parametros = []) use ($db): array {
+            $stmt = $db->prepare($sql);
+            $stmt->execute($parametros);
+            return $stmt->fetchAll();
+        };
+
+        $datos = [
+            'rol' => $usuario['rol'],
+            'indicadores' => [],
+            'graficas' => [],
+        ];
+        $eventosDashboard = $consultarTodos(
+            "SELECT id, nombre, fecha_inicio, fecha_fin, tipo, lugar
+             FROM eventos
+             WHERE fecha_fin >= NOW()
+             ORDER BY fecha_inicio"
+        );
+        $convocatoriasDashboard = [];
+        if (tablaExiste($db, 'eventos_secciones')) {
+            foreach ($consultarTodos(
+                'SELECT id_evento, seccion FROM eventos_secciones'
+            ) as $convocatoria) {
+                $convocatoriasDashboard[$convocatoria['id_evento']][] =
+                    $convocatoria['seccion'];
+            }
+        }
+        $seccionesUsuario = [];
+        if ($usuario['rol'] === 'tutor') {
+            $educandosUsuario = $consultarTodos(
+                'SELECT naz FROM educandos e
+                 JOIN usuarios_educandos ue ON ue.id_educando = e.id
+                 WHERE ue.id_usuario = ?',
+                [$usuario['id']]
+            );
+            foreach ($educandosUsuario as $educando) {
+                $seccion = seccionDeEducando($educando['naz'] ?? null);
+                if ($seccion) {
+                    $seccionesUsuario[] = $seccion;
+                }
+            }
+        }
+        $eventoConvoca = function (array $evento) use (
+            $usuario, $seccionesUsuario, $convocatoriasDashboard
+        ): bool {
+            if ($usuario['rol'] !== 'tutor') {
+                return true;
+            }
+            $convocatorias = $convocatoriasDashboard[$evento['id']] ?? [];
+            return !$convocatorias
+                || array_intersect($convocatorias, $seccionesUsuario);
+        };
+        $eventosVisibles = array_values(array_filter(
+            $eventosDashboard,
+            $eventoConvoca
+        ));
+        $proximoEvento = $eventosVisibles[0] ?? null;
+        $inicioMes = new DateTimeImmutable('first day of this month 00:00:00');
+        $finMes = $inicioMes->modify('last day of this month 23:59:59');
+        $sabadosMes = array_values(array_filter(
+            $eventosVisibles,
+            fn($evento): bool => $evento['tipo'] === 'sabado'
+                && new DateTimeImmutable($evento['fecha_inicio']) >= $inicioMes
+                && new DateTimeImmutable($evento['fecha_inicio']) <= $finMes
+        ));
+        $sabadosProximos = array_values(array_filter(
+            $eventosVisibles,
+            fn($evento): bool => $evento['tipo'] === 'sabado'
+        ));
+        $acampadas = array_values(array_filter(
+            $eventosVisibles,
+            fn($evento): bool => in_array(
+                strtolower($evento['tipo']),
+                ['campamento', 'acampada'],
+                true
+            )
+        ));
+        $cumples = [];
+        $hoy = new DateTimeImmutable('today');
+        $finSemana = $hoy->modify('+7 days');
+        foreach ($consultarTodos(
+            'SELECT nombre, apellidos, naz FROM educandos WHERE naz IS NOT NULL'
+        ) as $educando) {
+            $nacimiento = new DateTimeImmutable($educando['naz']);
+            $cumple = new DateTimeImmutable(
+                $hoy->format('Y') . '-' . $nacimiento->format('m-d')
+            );
+            if ($cumple < $hoy) {
+                $cumple = $cumple->modify('+1 year');
+            }
+            if ($cumple <= $finSemana) {
+                $cumples[] = [
+                    'nombre' => $educando['nombre'] . ' ' . $educando['apellidos'],
+                    'fecha' => $cumple->format('Y-m-d'),
+                ];
+            }
+        }
+        $datos['resumen'] = [
+            'proximo_evento' => $proximoEvento,
+            'sabados_mes' => $sabadosMes,
+            'proxima_acampada' => $acampadas[0] ?? null,
+            'cumpleanos' => $cumples,
+        ];
+        $datos['mini_calendario'] = array_map(
+            fn($evento): array => [
+                'fecha' => substr($evento['fecha_inicio'], 0, 10),
+                'nombre' => $evento['nombre'],
+            ],
+            $eventosVisibles
+        );
+        $eventosPendientes = (int) ($consultar(
+            'SELECT COUNT(*) AS cantidad FROM eventos WHERE fecha_fin >= NOW()'
+        )['cantidad'] ?? 0);
+        $eventosProximos = $consultarTodos(
+            "SELECT tipo, COUNT(*) AS cantidad
+             FROM eventos
+             WHERE fecha_fin >= NOW()
+             GROUP BY tipo
+             ORDER BY cantidad DESC, tipo"
+        );
+        $datos['graficas'][] = [
+            'tipo' => 'anillo',
+            'titulo' => 'Próximos eventos por tipo',
+            'etiquetas' => array_column($eventosProximos, 'tipo'),
+            'valores' => array_map('intval', array_column($eventosProximos, 'cantidad')),
+        ];
+
+        if ($usuario['rol'] === 'administrador') {
+            $usuarios = $consultarTodos(
+                'SELECT rol, COUNT(*) AS cantidad FROM usuarios GROUP BY rol ORDER BY rol'
+            );
+            $facturas = $consultar(
+                'SELECT COUNT(*) AS cantidad, COALESCE(SUM(precio), 0) AS total FROM facturas'
+            );
+            $datos['indicadores'] = [
+                ['nombre' => 'Usuarios', 'valor' => $consultar('SELECT COUNT(*) AS cantidad FROM usuarios')['cantidad'] ?? 0, 'detalle' => 'Cuentas registradas'],
+                ['nombre' => 'Educandos', 'valor' => $consultar('SELECT COUNT(*) AS cantidad FROM educandos')['cantidad'] ?? 0, 'detalle' => 'Personas inscritas'],
+                ['nombre' => 'Eventos próximos', 'valor' => $eventosPendientes, 'detalle' => 'Actividades pendientes'],
+                ['nombre' => 'Gasto registrado', 'valor' => number_format((float) $facturas['total'], 2, ',', '.') . ' €', 'detalle' => $facturas['cantidad'] . ' facturas'],
+            ];
+            $datos['graficas'][] = [
+                'tipo' => 'barras',
+                'titulo' => 'Usuarios por rol',
+                'etiquetas' => array_column($usuarios, 'rol'),
+                'valores' => array_map('intval', array_column($usuarios, 'cantidad')),
+            ];
+        } elseif ($usuario['rol'] === 'scouter') {
+            $sabado = $sabadosProximos[0] ?? null;
+            $asistenciaSabado = [];
+            if ($sabado) {
+                $educandos = $consultarTodos(
+                    'SELECT e.id, e.nombre, e.apellidos, e.naz
+                     FROM educandos e ORDER BY e.apellidos, e.nombre'
+                );
+                $estados = $consultarTodos(
+                    'SELECT id_educando, estado FROM educandos_asistencias
+                     WHERE id_evento = ?',
+                    [$sabado['id']]
+                );
+                $estadosPorEducando = array_column($estados, 'estado', 'id_educando');
+                foreach ($educandos as $educando) {
+                    $seccion = seccionDeEducando($educando['naz'] ?? null);
+                    $convocatorias = $convocatoriasDashboard[$sabado['id']] ?? [];
+                    if ($convocatorias && !in_array($seccion, $convocatorias, true)) {
+                        continue;
+                    }
+                    $estado = $estadosPorEducando[$educando['id'] ?? 0] ?? 'pendiente';
+                    $asistenciaSabado[$seccion ?: 'sin_seccion'][$estado] =
+                        ($asistenciaSabado[$seccion ?: 'sin_seccion'][$estado] ?? 0) + 1;
+                }
+            }
+            $datos['asistencias_sabado'] = [
+                'evento' => $sabado,
+                'secciones' => $asistenciaSabado,
+            ];
+            $facturas = $consultar(
+                'SELECT COUNT(*) AS cantidad, COALESCE(SUM(precio), 0) AS total
+                 FROM facturas WHERE responsable_id = ?',
+                [$usuario['id']]
+            );
+            $datos['indicadores'] = [
+                ['nombre' => 'Educandos', 'valor' => $consultar('SELECT COUNT(*) AS cantidad FROM educandos')['cantidad'] ?? 0, 'detalle' => 'A tu cargo en la aplicación'],
+                ['nombre' => 'Eventos próximos', 'valor' => $eventosPendientes, 'detalle' => 'Actividades pendientes'],
+                ['nombre' => 'Mis facturas', 'valor' => $facturas['cantidad'], 'detalle' => 'Facturas registradas'],
+                ['nombre' => 'Mi gasto', 'valor' => number_format((float) $facturas['total'], 2, ',', '.') . ' €', 'detalle' => 'Total de mis facturas'],
+            ];
+        } else {
+            $educandos = $consultar(
+                'SELECT COUNT(*) AS cantidad FROM usuarios_educandos WHERE id_usuario = ?',
+                [$usuario['id']]
+            );
+            $asistencias = $consultar(
+                "SELECT
+                    SUM(ea.estado = 'si') AS confirmadas,
+                    SUM(ea.estado = 'no') AS ausencias,
+                    SUM(ea.estado = 'pendiente' OR ea.estado IS NULL) AS pendientes
+                 FROM usuarios_educandos ue
+                 CROSS JOIN eventos e
+                 LEFT JOIN educandos_asistencias ea
+                    ON ea.id_educando = ue.id_educando AND ea.id_evento = e.id
+                 WHERE ue.id_usuario = ? AND e.fecha_fin >= NOW()",
+                [$usuario['id']]
+            );
+            $datos['indicadores'] = [
+                ['nombre' => 'Mis educandos', 'valor' => $educandos['cantidad'] ?? 0, 'detalle' => 'Personas vinculadas'],
+                ['nombre' => 'Próximas actividades', 'valor' => $eventosPendientes, 'detalle' => 'Eventos del calendario'],
+                ['nombre' => 'Asistencias pendientes', 'valor' => $asistencias['pendientes'] ?? 0, 'detalle' => 'Requieren respuesta'],
+                ['nombre' => 'Confirmadas', 'valor' => $asistencias['confirmadas'] ?? 0, 'detalle' => 'Asistencias registradas'],
+            ];
+            $datos['graficas'][] = [
+                'tipo' => 'tarta',
+                'titulo' => 'Estado de próximas asistencias',
+                'etiquetas' => ['Confirmadas', 'No asisten', 'Pendientes'],
+                'valores' => array_map('intval', [
+                    $asistencias['confirmadas'] ?? 0,
+                    $asistencias['ausencias'] ?? 0,
+                    $asistencias['pendientes'] ?? 0,
+                ]),
+            ];
+            $eventosVisiblesIds = array_map(
+                'intval',
+                array_column($eventosVisibles, 'id')
+            );
+            $pendientesCirculares = $consultarTodos(
+                "SELECT e.id AS evento_id
+                 FROM usuarios_educandos ue
+                 JOIN eventos e ON e.fecha_fin >= NOW() AND e.circular = 1
+                 LEFT JOIN educandos_asistencias ea
+                   ON ea.id_evento = e.id AND ea.id_educando = ue.id_educando
+                 WHERE ue.id_usuario = ?
+                   AND (ea.estado IS NULL OR ea.estado <> 'si')",
+                [$usuario['id']]
+            );
+            $datos['tutor'] = [
+                'circulares_pendientes' => count(array_filter(
+                    $pendientesCirculares,
+                    fn($fila): bool => in_array(
+                        (int) $fila['evento_id'],
+                        $eventosVisiblesIds,
+                        true
+                    )
+                )),
+                'asistencias_pendientes' => (int) ($asistencias['pendientes'] ?? 0),
+            ];
+        }
+
+        responder($datos);
+
     case 'asistencia_tutor':
         if ($usuario['rol'] !== 'tutor') {
             responder(['error' => 'Solo los tutores pueden usar esta ruta'], 403);
@@ -169,11 +467,25 @@ switch ($ruta) {
             );
             $stmt->execute([$eventoId, $usuario['id']]);
             $asistencias = $stmt->fetchAll();
-            foreach ($asistencias as &$asistencia) {
-                $asistencia['seccion'] = seccionDeEducando($asistencia['naz']);
+            $seccionesEvento = [];
+            if (tablaExiste($db, 'eventos_secciones')) {
+                $seccionesStmt = $db->prepare(
+                    'SELECT seccion FROM eventos_secciones WHERE id_evento = ?'
+                );
+                $seccionesStmt->execute([$eventoId]);
+                $seccionesEvento = $seccionesStmt->fetchAll(PDO::FETCH_COLUMN);
             }
-            unset($asistencia);
-            responder($asistencias);
+            $asistenciasFiltradas = [];
+            foreach ($asistencias as $asistencia) {
+                $asistencia['seccion'] = seccionDeEducando($asistencia['naz']);
+                if (
+                    !$seccionesEvento
+                    || in_array($asistencia['seccion'], $seccionesEvento, true)
+                ) {
+                    $asistenciasFiltradas[] = $asistencia;
+                }
+            }
+            responder($asistenciasFiltradas);
         }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -218,11 +530,10 @@ switch ($ruta) {
         responder(['error' => 'Método no permitido'], 405);
 
     case 'educando_documentos':
-        if ($usuario['rol'] !== 'tutor') {
-            responder(['error' => 'Solo los tutores pueden consultar estos documentos'], 403);
-        }
         $educandoId = (int) ($_GET['educando'] ?? 0);
-        if ($educandoId < 1 || !tutorTieneEducando($db, $usuario['id'], $educandoId)) {
+        $puedeConsultar = $usuario['rol'] !== 'tutor'
+            || tutorTieneEducando($db, $usuario['id'], $educandoId);
+        if ($educandoId < 1 || !$puedeConsultar) {
             responder(['error' => 'Educando no válido'], 403);
         }
         $stmt = $db->prepare(
@@ -236,8 +547,25 @@ switch ($ruta) {
         $stmt->execute([$educandoId]);
         responder($stmt->fetchAll());
 
+    case 'configuracion_logo':
     case 'configuracion':
         $rutaConfiguracion = __DIR__ . '/../data/config.php';
+        if ($_SERVER['REQUEST_METHOD'] === 'GET'
+            && $ruta === 'configuracion_logo') {
+            $configuracion = json_decode(
+                file_get_contents($rutaConfiguracion),
+                true
+            );
+            $archivo = $configuracion['logo_archivo'] ?? '';
+            $rutaLogo = __DIR__ . '/../../storage/configuracion/' . basename($archivo);
+            if (!$archivo || !is_file($rutaLogo)) {
+                responder(['error' => 'No hay logo configurado'], 404);
+            }
+            $mime = (new finfo(FILEINFO_MIME_TYPE))->file($rutaLogo);
+            header('Content-Type: ' . $mime);
+            readfile($rutaLogo);
+            exit;
+        }
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $configuracion = json_decode(file_get_contents($rutaConfiguracion), true);
             responder(is_array($configuracion)
@@ -246,9 +574,64 @@ switch ($ruta) {
         }
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exigirRol(['administrador']);
-            $configuracion = json_decode(file_get_contents('php://input'), true);
-            if (!is_array($configuracion)) {
+            $recibida = isset($_POST['configuracion'])
+                ? json_decode($_POST['configuracion'], true)
+                : json_decode(file_get_contents('php://input'), true);
+            if (!is_array($recibida)) {
                 responder(['error' => 'La configuración no es válida']);
+            }
+            $actual = json_decode(file_get_contents($rutaConfiguracion), true);
+            $configuracion = is_array($actual) ? $actual : [];
+            $camposTexto = [
+                'nombre_grupo', 'color', 'color_secundario', 'cif',
+                'direccion', 'municipio', 'provincia', 'telefono', 'correo',
+                'coordinador', 'nombre_rol_administrador',
+                'nombre_rol_scouter', 'nombre_rol_tutor', 'formato_nombre',
+                'formatos_entrega', 'categorias_facturas', 'tipos_evento',
+                'secciones'
+            ];
+            foreach ($camposTexto as $campo) {
+                if (array_key_exists($campo, $recibida)) {
+                    $configuracion[$campo] = trim((string) $recibida[$campo]);
+                }
+            }
+            foreach (['modo_oscuro', 'mostrar_educandos_sin_seccion',
+                'permitir_asistencia_pasada'] as $campo) {
+                $configuracion[$campo] = filter_var(
+                    $recibida[$campo] ?? false,
+                    FILTER_VALIDATE_BOOLEAN
+                );
+            }
+            if (isset($recibida['tamano_maximo_archivos_mb'])) {
+                $configuracion['tamano_maximo_archivos_mb'] = max(
+                    1,
+                    min(50, (int) $recibida['tamano_maximo_archivos_mb'])
+                );
+            }
+            $logo = $_FILES['logo'] ?? null;
+            if ($logo && $logo['error'] !== UPLOAD_ERR_NO_FILE) {
+                if ($logo['error'] !== UPLOAD_ERR_OK || $logo['size'] > 5 * 1024 * 1024) {
+                    responder(['error' => 'El logo no es válido o supera los 5 MB'], 400);
+                }
+                $permitidos = [
+                    'image/jpeg' => 'jpg',
+                    'image/png' => 'png',
+                    'image/webp' => 'webp',
+                ];
+                $mime = (new finfo(FILEINFO_MIME_TYPE))->file($logo['tmp_name']);
+                if (!isset($permitidos[$mime])) {
+                    responder(['error' => 'El logo debe ser JPEG, PNG o WebP'], 415);
+                }
+                $directorio = __DIR__ . '/../../storage/configuracion';
+                if (!is_dir($directorio) && !mkdir($directorio, 0750, true)) {
+                    responder(['error' => 'No se pudo preparar el almacenamiento del logo'], 500);
+                }
+                $nombre = 'logo-' . bin2hex(random_bytes(12))
+                    . '.' . $permitidos[$mime];
+                if (!move_uploaded_file($logo['tmp_name'], $directorio . '/' . $nombre)) {
+                    responder(['error' => 'No se pudo guardar el logo'], 500);
+                }
+                $configuracion['logo_archivo'] = $nombre;
             }
             if (file_put_contents(
                 $rutaConfiguracion,
@@ -269,7 +652,9 @@ switch ($ruta) {
         }
         $entidades = $db->query(
             "SELECT TABLE_NAME FROM information_schema.TABLES
-             WHERE TABLE_SCHEMA = DATABASE() ORDER BY TABLE_NAME"
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME <> 'eventos_secciones'
+             ORDER BY TABLE_NAME"
         )->fetchAll(PDO::FETCH_COLUMN);
         if ($usuario['rol'] === 'scouter') {
             $permitidas = [
@@ -293,7 +678,16 @@ switch ($ruta) {
                 break;
             }
         }
-        $sql = 'SELECT * FROM `' . str_replace('`', '``', $tabla) . '`';
+        $sql = $tabla === 'facturas'
+            ? 'SELECT f.*, CONCAT(u.nombre, \' \', u.apellidos) AS responsable_nombre
+               FROM facturas f
+               JOIN usuarios u ON u.id = f.responsable_id'
+            : ($tabla === 'eventos'
+                ? 'SELECT e.*, CONCAT(u.nombre, \' \', u.apellidos)
+                       AS responsable_nombre
+                   FROM eventos e
+                   LEFT JOIN usuarios u ON u.id = e.id_responsable'
+                : 'SELECT * FROM `' . str_replace('`', '``', $tabla) . '`');
         $parametros = [];
         if ($usuario['rol'] === 'tutor' && $tabla === 'educandos') {
             $sql .= ' WHERE id IN (SELECT id_educando FROM usuarios_educandos WHERE id_usuario = ?)';
@@ -305,6 +699,21 @@ switch ($ruta) {
         $stmt = $db->prepare($sql);
         $stmt->execute($parametros);
         $registros = $stmt->fetchAll();
+        if ($tabla === 'eventos' && tablaExiste($db, 'eventos_secciones')) {
+            $seccionesStmt = $db->query(
+                'SELECT id_evento, seccion FROM eventos_secciones ORDER BY seccion'
+            );
+            $seccionesPorEvento = [];
+            foreach ($seccionesStmt->fetchAll() as $filaSeccion) {
+                $seccionesPorEvento[$filaSeccion['id_evento']][] =
+                    $filaSeccion['seccion'];
+            }
+            foreach ($registros as &$registro) {
+                $registro['convocatorias'] =
+                    $seccionesPorEvento[$registro['id']] ?? [];
+            }
+            unset($registro);
+        }
         if ($tabla === 'educandos') {
             foreach ($registros as &$registro) {
                 $registro['seccion'] = seccionDeEducando($registro['naz'] ?? null);
@@ -346,13 +755,22 @@ switch ($ruta) {
             responder(['error' => 'Datos incorrectos']);
         }
         exigirPermisoTabla($usuario, $tabla, 'escritura');
+        if ($tabla === 'eventos' && !tablaExiste($db, 'eventos_secciones')) {
+            responder([
+                'error' => 'Falta crear la tabla eventos_secciones. Ejecuta la migración de noteas.md'
+            ], 500);
+        }
         $educandosRelacionados = $tabla === 'usuarios'
             ? array_values(array_filter(
                 $datos['educandos_relacionados'] ?? [],
                 fn($id): bool => filter_var($id, FILTER_VALIDATE_INT) !== false
             ))
             : [];
+        $convocatorias = $tabla === 'eventos'
+            ? ($datos['convocatorias'] ?? [])
+            : [];
         unset($datos['educandos_relacionados']);
+        unset($datos['convocatorias']);
         $columnas = obtenerColumnas($db, $tabla);
         $permitidas = array_column(array_filter($columnas, fn($columna) => !$columna['pk']), 'name');
         $datosValidos = array_intersect_key($datos, array_flip($permitidas));
@@ -417,6 +835,25 @@ switch ($ruta) {
             );
             foreach (array_unique($educandosRelacionados) as $educandoId) {
                 $relacion->execute([$registroId, $educandoId]);
+            }
+        }
+        if ($tabla === 'facturas') {
+            guardarImagenFactura($db, $registroId);
+        }
+        if ($tabla === 'eventos') {
+            $seccionesValidas = ['colonia', 'manada', 'tropa', 'posta', 'rutas'];
+            $convocatorias = array_values(array_intersect(
+                $seccionesValidas,
+                array_unique(array_map('strval', is_array($convocatorias)
+                    ? $convocatorias : []))
+            ));
+            $db->prepare('DELETE FROM eventos_secciones WHERE id_evento = ?')
+                ->execute([$registroId]);
+            $seccionStmt = $db->prepare(
+                'INSERT INTO eventos_secciones (id_evento, seccion) VALUES (?, ?)'
+            );
+            foreach ($convocatorias as $seccion) {
+                $seccionStmt->execute([$registroId, $seccion]);
             }
         }
         responder(['ok' => true]);
