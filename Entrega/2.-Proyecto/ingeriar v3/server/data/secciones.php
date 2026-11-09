@@ -40,6 +40,38 @@ function seccionDeEducando(?string $nacimiento, ?DateTimeImmutable $fecha = null
     };
 }
 
+function seccionDeEducandoConCatalogo(
+    ?string $nacimiento,
+    array $secciones,
+    ?DateTimeImmutable $fecha = null
+): ?string {
+    if (!$nacimiento) {
+        return null;
+    }
+    try {
+        $fechaNacimiento = new DateTimeImmutable($nacimiento);
+        $fecha ??= new DateTimeImmutable('now');
+        $inicioRonda = new DateTimeImmutable(
+            (int) $fecha->format('Y') . '-09-01'
+        );
+        if ($fecha < $inicioRonda) {
+            $inicioRonda = $inicioRonda->modify('-1 year');
+        }
+        $edad = (int) $fechaNacimiento->diff($inicioRonda)->y;
+    } catch (Exception) {
+        return null;
+    }
+    foreach ($secciones as $seccion) {
+        if ($seccion['edad_minima'] !== null
+            && $seccion['edad_maxima'] !== null
+            && $edad >= (int) $seccion['edad_minima']
+            && $edad <= (int) $seccion['edad_maxima']) {
+            return $seccion['codigo'];
+        }
+    }
+    return null;
+}
+
 function nombreCarpetaEducando(int $id, string $nombre, string $apellidos): string
 {
     $texto = $id . '-' . $nombre . '-' . $apellidos;

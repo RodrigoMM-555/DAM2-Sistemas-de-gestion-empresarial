@@ -73,8 +73,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     );
     $educandoStmt->execute([$educandoId]);
     $educando = $educandoStmt->fetch();
+    $secciones = $db->query(
+        'SELECT codigo, edad_minima, edad_maxima FROM secciones
+         WHERE activo = 1 ORDER BY orden, nombre'
+    )->fetchAll();
     $seccion = $educando
-        ? seccionDeEducando($educando['naz'] ?? null)
+        ? seccionDeEducandoConCatalogo(
+            $educando['naz'] ?? null,
+            $secciones
+        )
         : null;
     if (!$educando || !$seccion) {
         http_response_code(409);

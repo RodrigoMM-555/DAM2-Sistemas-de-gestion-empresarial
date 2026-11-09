@@ -17,10 +17,14 @@ class IngeriarUtilidades {
 
     obtenerJson(url) {
         return fetch(url).then(function (respuesta) {
-            if (!respuesta.ok) {
-                throw new Error("No se pudo obtener la información");
-            }
-            return respuesta.json();
+            return respuesta.json().catch(() => ({})).then((datos) => {
+                if (!respuesta.ok) {
+                    throw new Error(
+                        datos.error || "No se pudo obtener la información"
+                    );
+                }
+                return datos;
+            });
         });
     }
 

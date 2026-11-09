@@ -155,6 +155,15 @@ class IngeriarFormulario {
         if (limite !== null && control.tagName === "INPUT") {
             control.maxLength = limite;
         }
+        if (
+            control.tagName === "INPUT" &&
+            ["DECIMAL", "NUMERIC", "REAL", "FLOAT", "DOUBLE"]
+                .some((tipo) => columna.type.toUpperCase().includes(tipo))
+        ) {
+            control.step = "0.01";
+            control.min = "0";
+            control.inputMode = "decimal";
+        }
 
         if (control.tagName !== "SELECT") {
             control.value = registro?.[columna.name]
@@ -178,7 +187,7 @@ class IngeriarFormulario {
             )
             : Promise.resolve(columna.options.map((valor) => ({
                 valor,
-                etiqueta: this.utilidades.capitalizar(valor)
+                etiqueta: this.etiquetaOpcion(columna, valor)
             })));
 
         return opciones.then((valores) => {
@@ -224,8 +233,39 @@ class IngeriarFormulario {
         return Promise.resolve(grupo);
     }
 
+    etiquetaOpcion(columna, valor) {
+        if (
+            (this.tabla === "eventos" && columna.name === "tipo") ||
+            (this.tabla === "facturas" && columna.name === "categoria")
+        ) {
+            const etiquetas = document.documentElement.dataset
+                [this.tabla === "eventos"
+                    ? "nombresTiposEvento" : "categoriasFactura"];
+            if (etiquetas) {
+                try {
+                    const datos = JSON.parse(etiquetas);
+                    const etiqueta = Array.isArray(datos)
+                        ? datos.find((dato) => dato.codigo === valor)?.nombre
+                        : datos[valor];
+                    return etiqueta || this.utilidades.capitalizar(valor);
+                } catch (error) {
+                    return this.utilidades.capitalizar(valor);
+                }
+            }
+        }
+        return this.utilidades.capitalizar(valor);
+    }
+
     crearControlSecciones(registro) {
-        const secciones = ["colonia", "manada", "tropa", "posta", "rutas"];
+        let secciones = [];
+        try {
+            secciones = JSON.parse(
+                document.documentElement.dataset.secciones || "[]"
+            ).filter((seccion) => Number(seccion.activo) === 1 ||
+                seccion.activo === true);
+        } catch (error) {
+            throw new Error("No se pudieron cargar las secciones");
+        }
         const convocadas = new Set(registro?.convocatorias || []);
         const grupo = document.createElement("fieldset");
         grupo.className = "campo campo-secciones";
@@ -242,16 +282,25 @@ class IngeriarFormulario {
         todas.append(todasControl, " Todas las secciones");
         grupo.appendChild(todas);
 
-        secciones.forEach((seccion) => {
+        const convocadasNoActivas = Array.from(convocadas)
+            .filter((codigo) => !secciones.some(
+                (seccion) => seccion.codigo === codigo
+            ))
+            .map((codigo) => ({
+                codigo,
+                nombre: codigo + " (sección archivada)",
+                activo: false
+            }));
+        [...secciones, ...convocadasNoActivas].forEach((seccion) => {
             const opcion = document.createElement("label");
             opcion.className = "opcion-seccion";
             const control = document.createElement("input");
             control.type = "checkbox";
             control.name = "convocatorias";
-            control.value = seccion;
-            control.checked = convocadas.has(seccion);
+            control.value = seccion.codigo;
+            control.checked = convocadas.has(seccion.codigo);
             control.disabled = todasControl.checked;
-            opcion.append(control, " " + this.utilidades.capitalizar(seccion));
+            opcion.append(control, " " + seccion.nombre);
             grupo.appendChild(opcion);
         });
         todasControl.addEventListener("change", () => {

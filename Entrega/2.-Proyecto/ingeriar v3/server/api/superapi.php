@@ -84,6 +84,44 @@ function comprobarTabla(PDO $db, string $tabla): void
     }
 }
 
+function catalogos(PDO $db, bool $soloActivos = false): array
+{
+    $filtro = $soloActivos ? ' WHERE activo = 1' : '';
+    $tipos = $db->query(
+        'SELECT codigo, nombre, activo, orden FROM tipos_evento' .
+        $filtro . ' ORDER BY orden, nombre'
+    )->fetchAll();
+    $secciones = $db->query(
+        'SELECT codigo, nombre, edad_minima, edad_maxima, activo, orden
+         FROM secciones' . $filtro . ' ORDER BY orden, nombre'
+    )->fetchAll();
+    $categoriasFactura = $db->query(
+        'SELECT codigo, nombre, activo, orden FROM categorias_factura' .
+        $filtro . ' ORDER BY orden, nombre'
+    )->fetchAll();
+    return [
+        'tipos_evento' => $tipos,
+        'secciones' => $secciones,
+        'categorias_factura' => $categoriasFactura
+    ];
+}
+
+function seccionEducando(PDO $db, ?string $nacimiento): ?string
+{
+    if (!tablaExiste($db, 'secciones')) {
+        return seccionDeEducando($nacimiento);
+    }
+    try {
+        $secciones = $db->query(
+            'SELECT codigo, edad_minima, edad_maxima FROM secciones
+             WHERE activo = 1 ORDER BY orden, nombre'
+        )->fetchAll();
+    } catch (PDOException) {
+        return seccionDeEducando($nacimiento);
+    }
+    return seccionDeEducandoConCatalogo($nacimiento, $secciones);
+}
+
 function obtenerColumnas(PDO $db, string $tabla): array
 {
     comprobarTabla($db, $tabla);
@@ -105,6 +143,23 @@ function obtenerColumnas(PDO $db, string $tabla): array
                 fn(string $valor): string => str_replace("''", "'", $valor),
                 $valores[1]
             );
+        }
+        if ($tabla === 'eventos' && $fila['COLUMN_NAME'] === 'tipo'
+            && tablaExiste($db, 'tipos_evento')) {
+            $opciones = $db->query(
+                'SELECT codigo FROM tipos_evento WHERE activo = 1
+                 ORDER BY orden, nombre'
+            )->fetchAll(PDO::FETCH_COLUMN);
+        }
+        if ($tabla === 'facturas' && $fila['COLUMN_NAME'] === 'categoria'
+            && tablaExiste($db, 'categorias_factura')) {
+            $opciones = $db->query(
+                'SELECT codigo FROM categorias_factura WHERE activo = 1
+                 ORDER BY orden, nombre'
+            )->fetchAll(PDO::FETCH_COLUMN);
+        }
+        if ($tabla === 'facturas' && $fila['COLUMN_NAME'] === 'estado') {
+            $opciones = ['pendiente', 'pagada', 'rechazada'];
         }
 
         $relacion = null;
@@ -228,7 +283,7 @@ switch ($ruta) {
                 [$usuario['id']]
             );
             foreach ($educandosUsuario as $educando) {
-                $seccion = seccionDeEducando($educando['naz'] ?? null);
+                $seccion = seccionEducando($db, $educando['naz'] ?? null);
                 if ($seccion) {
                     $seccionesUsuario[] = $seccion;
                 }
@@ -312,10 +367,19 @@ switch ($ruta) {
              GROUP BY tipo
              ORDER BY cantidad DESC, tipo"
         );
+        $nombresTiposEvento = [];
+        if (tablaExiste($db, 'tipos_evento')) {
+            $nombresTiposEvento = $db->query(
+                'SELECT codigo, nombre FROM tipos_evento'
+            )->fetchAll(PDO::FETCH_KEY_PAIR);
+        }
         $datos['graficas'][] = [
             'tipo' => 'anillo',
             'titulo' => 'Próximos eventos por tipo',
-            'etiquetas' => array_column($eventosProximos, 'tipo'),
+            'etiquetas' => array_map(
+                fn($tipo): string => $nombresTiposEvento[$tipo] ?? $tipo,
+                array_column($eventosProximos, 'tipo')
+            ),
             'valores' => array_map('intval', array_column($eventosProximos, 'cantidad')),
         ];
 
@@ -353,7 +417,7 @@ switch ($ruta) {
                 );
                 $estadosPorEducando = array_column($estados, 'estado', 'id_educando');
                 foreach ($educandos as $educando) {
-                    $seccion = seccionDeEducando($educando['naz'] ?? null);
+                    $seccion = seccionEducando($db, $educando['naz'] ?? null);
                     $convocatorias = $convocatoriasDashboard[$sabado['id']] ?? [];
                     if ($convocatorias && !in_array($seccion, $convocatorias, true)) {
                         continue;
@@ -477,7 +541,7 @@ switch ($ruta) {
             }
             $asistenciasFiltradas = [];
             foreach ($asistencias as $asistencia) {
-                $asistencia['seccion'] = seccionDeEducando($asistencia['naz']);
+                $asistencia['seccion'] = seccionEducando($db, $asistencia['naz']);
                 if (
                     !$seccionesEvento
                     || in_array($asistencia['seccion'], $seccionesEvento, true)
@@ -547,6 +611,104 @@ switch ($ruta) {
         $stmt->execute([$educandoId]);
         responder($stmt->fetchAll());
 
+    case 'catalogos':
+        if (!tablaExiste($db, 'tipos_evento')
+            || !tablaExiste($db, 'secciones')
+            || !tablaExiste($db, 'categorias_factura')) {
+            responder(['error' => 'Faltan los catálogos. Ejecuta la migración de catálogos.'], 500);
+        }
+        if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+            responder(catalogos($db, $usuario['rol'] === 'tutor'));
+        }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST'
+            || $usuario['rol'] !== 'administrador') {
+            responder(['error' => 'No tienes permisos para modificar catálogos'], 403);
+        }
+        $recibida = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($recibida)
+            || !isset($recibida['tipos_evento'], $recibida['secciones'],
+                $recibida['categorias_factura'])
+            || !is_array($recibida['tipos_evento'])
+            || !is_array($recibida['secciones'])
+            || !is_array($recibida['categorias_factura'])) {
+            responder(['error' => 'Los catálogos no son válidos'], 400);
+        }
+        $validarCodigo = static function ($codigo): string {
+            $codigo = trim((string) $codigo);
+            if ($codigo === '' || strlen($codigo) > 50
+                || preg_match('/^[\p{L}][\p{L}\p{N}_ -]*$/u', $codigo) !== 1) {
+                responder(['error' => 'El código de catálogo no es válido'], 400);
+            }
+            return $codigo;
+        };
+        $guardarCatalogo = static function (
+            PDO $db,
+            string $tabla,
+            array $elementos
+        ) use ($validarCodigo): void {
+            $codigos = [];
+            foreach ($elementos as $indice => $elemento) {
+                if (!is_array($elemento)) {
+                    responder(['error' => 'Elemento inválido en ' . $tabla], 400);
+                }
+                $codigo = $validarCodigo($elemento['codigo'] ?? '');
+                if (isset($codigos[$codigo])) {
+                    responder(['error' => 'Hay códigos repetidos en ' . $tabla], 400);
+                }
+                $codigos[$codigo] = true;
+                $nombre = trim((string) ($elemento['nombre'] ?? ''));
+                if ($nombre === '' || strlen($nombre) > 100) {
+                    responder(['error' => 'El nombre de catálogo no es válido'], 400);
+                }
+                $activo = !empty($elemento['activo']) ? 1 : 0;
+                $orden = max(0, (int) ($elemento['orden'] ?? $indice));
+                if ($tabla === 'tipos_evento' || $tabla === 'categorias_factura') {
+                    $tablaSql = $tabla === 'categorias_factura'
+                        ? 'categorias_factura' : 'tipos_evento';
+                    $stmt = $db->prepare(
+                        'INSERT INTO ' . $tablaSql . '
+                         (codigo, nombre, activo, orden) VALUES (?, ?, ?, ?)
+                         ON DUPLICATE KEY UPDATE nombre = VALUES(nombre),
+                         activo = VALUES(activo), orden = VALUES(orden)'
+                    );
+                    $stmt->execute([$codigo, $nombre, $activo, $orden]);
+                } else {
+                    $minima = $elemento['edad_minima'] === '' ||
+                        $elemento['edad_minima'] === null
+                        ? null : max(0, min(120, (int) $elemento['edad_minima']));
+                    $maxima = $elemento['edad_maxima'] === '' ||
+                        $elemento['edad_maxima'] === null
+                        ? null : max(0, min(120, (int) $elemento['edad_maxima']));
+                    if ($minima !== null && $maxima !== null && $minima > $maxima) {
+                        responder(['error' => 'El intervalo de edades no es válido'], 400);
+                    }
+                    $stmt = $db->prepare(
+                        'INSERT INTO secciones
+                         (codigo, nombre, edad_minima, edad_maxima, activo, orden)
+                         VALUES (?, ?, ?, ?, ?, ?)
+                         ON DUPLICATE KEY UPDATE nombre = VALUES(nombre),
+                         edad_minima = VALUES(edad_minima),
+                         edad_maxima = VALUES(edad_maxima),
+                         activo = VALUES(activo), orden = VALUES(orden)'
+                    );
+                    $stmt->execute([
+                        $codigo, $nombre, $minima, $maxima, $activo, $orden
+                    ]);
+                }
+            }
+        };
+        $db->beginTransaction();
+        try {
+            $guardarCatalogo($db, 'tipos_evento', $recibida['tipos_evento']);
+            $guardarCatalogo($db, 'secciones', $recibida['secciones']);
+            $guardarCatalogo($db, 'categorias_factura', $recibida['categorias_factura']);
+            $db->commit();
+        } catch (Throwable $error) {
+            $db->rollBack();
+            responder(['error' => 'No se pudieron guardar los catálogos'], 500);
+        }
+        responder(['ok' => true, 'catalogos' => catalogos($db)]);
+
     case 'configuracion_logo':
     case 'configuracion':
         $rutaConfiguracion = __DIR__ . '/../data/config.php';
@@ -568,6 +730,22 @@ switch ($ruta) {
         }
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $configuracion = json_decode(file_get_contents($rutaConfiguracion), true);
+            if (is_array($configuracion)
+                && !isset($configuracion['nombres_tipos_evento'])) {
+                $configuracion['nombres_tipos_evento'] = [
+                    'reunión de familias' => 'Reunión de familias',
+                    'sabado' => 'Sábado',
+                    'festival' => 'Festival',
+                    'excursion' => 'Excursión',
+                    'acampada' => 'Acampada',
+                    'otro' => 'Otro'
+                ];
+            }
+            if (is_array($configuracion) && tablaExiste($db, 'tipos_evento')
+                && tablaExiste($db, 'secciones')
+                && tablaExiste($db, 'categorias_factura')) {
+                $configuracion['catalogos'] = catalogos($db);
+            }
             responder(is_array($configuracion)
                 ? $configuracion
                 : ['error' => 'La configuración no es válida']);
@@ -587,13 +765,27 @@ switch ($ruta) {
                 'direccion', 'municipio', 'provincia', 'telefono', 'correo',
                 'coordinador', 'nombre_rol_administrador',
                 'nombre_rol_scouter', 'nombre_rol_tutor', 'formato_nombre',
-                'formatos_entrega', 'categorias_facturas', 'tipos_evento',
-                'secciones'
+                'formatos_entrega'
             ];
             foreach ($camposTexto as $campo) {
                 if (array_key_exists($campo, $recibida)) {
                     $configuracion[$campo] = trim((string) $recibida[$campo]);
                 }
+            }
+            $tiposValidos = [
+                'reunión de familias', 'sabado', 'festival', 'excursion',
+                'acampada', 'otro'
+            ];
+            if (isset($recibida['nombres_tipos_evento'])
+                && is_array($recibida['nombres_tipos_evento'])) {
+                $nombres = [];
+                foreach ($tiposValidos as $tipo) {
+                    $nombre = trim((string) (
+                        $recibida['nombres_tipos_evento'][$tipo] ?? $tipo
+                    ));
+                    $nombres[$tipo] = $nombre !== '' ? $nombre : $tipo;
+                }
+                $configuracion['nombres_tipos_evento'] = $nombres;
             }
             foreach (['modo_oscuro', 'mostrar_educandos_sin_seccion',
                 'permitir_asistencia_pasada'] as $campo) {
@@ -653,7 +845,12 @@ switch ($ruta) {
         $entidades = $db->query(
             "SELECT TABLE_NAME FROM information_schema.TABLES
              WHERE TABLE_SCHEMA = DATABASE()
-               AND TABLE_NAME <> 'eventos_secciones'
+               AND TABLE_NAME NOT IN (
+                   'eventos_secciones',
+                   'tipos_evento',
+                   'secciones',
+                   'categorias_factura'
+               )
              ORDER BY TABLE_NAME"
         )->fetchAll(PDO::FETCH_COLUMN);
         if ($usuario['rol'] === 'scouter') {
@@ -716,7 +913,7 @@ switch ($ruta) {
         }
         if ($tabla === 'educandos') {
             foreach ($registros as &$registro) {
-                $registro['seccion'] = seccionDeEducando($registro['naz'] ?? null);
+                $registro['seccion'] = seccionEducando($db, $registro['naz'] ?? null);
             }
             unset($registro);
         }
@@ -775,6 +972,17 @@ switch ($ruta) {
         $permitidas = array_column(array_filter($columnas, fn($columna) => !$columna['pk']), 'name');
         $datosValidos = array_intersect_key($datos, array_flip($permitidas));
         if ($tabla === 'eventos') {
+            if (!isset($datosValidos['tipo'])
+                || !is_string($datosValidos['tipo'])) {
+                responder(['error' => 'El tipo de evento es obligatorio'], 400);
+            }
+            $tipoStmt = $db->prepare(
+                'SELECT 1 FROM tipos_evento WHERE codigo = ?'
+            );
+            $tipoStmt->execute([$datosValidos['tipo']]);
+            if (!$tipoStmt->fetchColumn()) {
+                responder(['error' => 'El tipo de evento no existe'], 400);
+            }
             if (array_key_exists('circular', $datosValidos)) {
                 $datosValidos['circular'] = filter_var(
                     $datosValidos['circular'],
@@ -841,7 +1049,9 @@ switch ($ruta) {
             guardarImagenFactura($db, $registroId);
         }
         if ($tabla === 'eventos') {
-            $seccionesValidas = ['colonia', 'manada', 'tropa', 'posta', 'rutas'];
+            $seccionesValidas = $db->query(
+                'SELECT codigo FROM secciones'
+            )->fetchAll(PDO::FETCH_COLUMN);
             $convocatorias = array_values(array_intersect(
                 $seccionesValidas,
                 array_unique(array_map('strval', is_array($convocatorias)

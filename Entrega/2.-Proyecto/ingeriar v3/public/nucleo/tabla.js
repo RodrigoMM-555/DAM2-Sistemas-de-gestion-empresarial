@@ -19,6 +19,18 @@ class IngeriarTabla {
         });
     }
 
+    nombreSeccion(codigo) {
+        try {
+            const secciones = JSON.parse(
+                document.documentElement.dataset.secciones || "[]"
+            );
+            return secciones.find((seccion) => seccion.codigo === codigo)
+                ?.nombre || codigo;
+        } catch (error) {
+            return codigo;
+        }
+    }
+
     render(datos) {
         const registros = datos.registros || [];
         const columnas = datos.columnas || [];
@@ -171,6 +183,18 @@ class IngeriarTabla {
             nombres.forEach((nombre, indice) => {
                 let celda = document.createElement("td");
                 celda.textContent = registro[nombre] ?? "";
+                if (this.tabla === "facturas" && nombre === "categoria") {
+                    try {
+                        const categorias = JSON.parse(
+                            document.documentElement.dataset.categoriasFactura || "[]"
+                        );
+                        celda.textContent = categorias.find(
+                            (categoria) => categoria.codigo === registro[nombre]
+                        )?.nombre || registro[nombre] || "";
+                    } catch (error) {
+                        celda.textContent = registro[nombre] ?? "";
+                    }
+                }
                 const columnaDestacada = usuarioActual?.rol === "tutor"
                     ? 0
                     : 1;
@@ -180,7 +204,7 @@ class IngeriarTabla {
                 }
                 if (nombre === "seccion" && registro.seccion) {
                     celda.classList.add("celda-seccion");
-                    celda.textContent = registro.seccion;
+                    celda.textContent = this.nombreSeccion(registro.seccion);
                 }
                 fila.appendChild(celda);
             });

@@ -18,8 +18,5 @@
     "mostrar_educandos_sin_seccion": true,
     "permitir_asistencia_pasada": false,
     "tamano_maximo_archivos_mb": 10,
-    "formatos_entrega": "pdf, jpg, png, docx",
-    "categorias_facturas": "envíos, comida, material, gasolina, otros, agua, luz, gas",
-    "tipos_evento": "reunión de familias, sabado, festival, excursion, otro",
-    "secciones": "colonia, manada, tropa, posta, rutas"
+    "formatos_entrega": "pdf, jpg, png, docx"
 }

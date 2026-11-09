@@ -29,6 +29,16 @@ class IngeriarConfiguracion {
         );
         document.documentElement.dataset.modoOscuro =
             configuracion.modo_oscuro ? "true" : "false";
+        document.documentElement.dataset.nombresTiposEvento = JSON.stringify(
+            Object.fromEntries((configuracion.catalogos?.tipos_evento || [])
+                .map((tipo) => [tipo.codigo, tipo.nombre]))
+        );
+        document.documentElement.dataset.secciones = JSON.stringify(
+            configuracion.catalogos?.secciones || []
+        );
+        document.documentElement.dataset.categoriasFactura = JSON.stringify(
+            configuracion.catalogos?.categorias_factura || []
+        );
         const rol = document.querySelector("#rol-actual");
         if (rol && typeof usuarioActual !== "undefined" && usuarioActual) {
             rol.textContent = configuracion[
@@ -107,13 +117,13 @@ class IngeriarConfiguracion {
                     ["permitir_asistencia_pasada", "Permitir asistencia en eventos pasados", "checkbox"],
                     ["tamano_maximo_archivos_mb", "Tamaño máximo de archivos (MB)", "number"],
                     ["formatos_entrega", "Formatos de entrega", "text"]
-                ]],
-                ["Listas de la aplicación", [
-                    ["categorias_facturas", "Categorías de facturas", "textarea"],
-                    ["tipos_evento", "Tipos de evento", "textarea"],
-                    ["secciones", "Secciones", "textarea"]
                 ]]
             ];
+            const catalogos = configuracion.catalogos || {
+                tipos_evento: [],
+                secciones: [],
+                categorias_factura: []
+            };
             campos.forEach(([nombreGrupo, definiciones]) => {
                 let grupoTitulo = document.createElement("h3");
                 grupoTitulo.className = "titulo-configuracion";
@@ -159,6 +169,22 @@ class IngeriarConfiguracion {
                 formulario.appendChild(grupo);
                 });
             });
+            const tiposTitulo = document.createElement("h3");
+            tiposTitulo.className = "titulo-configuracion";
+            tiposTitulo.textContent = "Configuración de tipos de listas";
+            formulario.appendChild(tiposTitulo);
+            const tipos = this.crearEditorCatalogo(
+                "Tipos de evento", catalogos.tipos_evento, false
+            );
+            const secciones = this.crearEditorCatalogo(
+                "Secciones", catalogos.secciones, true
+            );
+            const categoriasFactura = this.crearEditorCatalogo(
+                "Categorías de facturas",
+                catalogos.categorias_factura,
+                false
+            );
+            formulario.append(tipos, secciones, categoriasFactura);
 
             let guardar = document.createElement("button");
             guardar.type = "submit";
@@ -176,20 +202,111 @@ class IngeriarConfiguracion {
                     evento.target.mostrar_educandos_sin_seccion.checked;
                 datos.permitir_asistencia_pasada =
                     evento.target.permitir_asistencia_pasada.checked;
-                this.guardar(datos, evento.target.logo_archivo.files[0]);
+                const catalogosActualizados = {
+                    tipos_evento: this.leerEditorCatalogo(tipos),
+                    secciones: this.leerEditorCatalogo(secciones),
+                    categorias_factura: this.leerEditorCatalogo(categoriasFactura)
+                };
+                this.guardar(
+                    datos,
+                    evento.target.logo_archivo.files[0],
+                    catalogosActualizados
+                );
             };
 
             seccion.appendChild(formulario);
         });
     }
 
-    guardar(datos, logo) {
+    crearEditorCatalogo(titulo, elementos, incluyeEdades) {
+        const bloque = document.createElement("section");
+        bloque.className = "bloque-catalogo";
+        const encabezado = document.createElement("h3");
+        encabezado.className = "titulo-configuracion";
+        encabezado.textContent = titulo;
+        const lista = document.createElement("div");
+        lista.className = "lista-catalogo";
+        lista.dataset.edades = incluyeEdades ? "true" : "false";
+        const añadir = (elemento = {}) => {
+            const fila = document.createElement("div");
+            fila.className = "fila-catalogo";
+            fila.innerHTML = `
+                <input data-campo="codigo" placeholder="Código interno">
+                <input data-campo="nombre" placeholder="Nombre visible">
+                ${incluyeEdades ? `
+                    <input data-campo="edad_minima" type="number" min="0"
+                        placeholder="Edad mín.">
+                    <input data-campo="edad_maxima" type="number" min="0"
+                        placeholder="Edad máx.">` : ""}
+                <label><input data-campo="activo" type="checkbox"> Activo</label>
+                <button type="button" class="boton boton-borrar">Quitar</button>`;
+            Object.entries(elemento).forEach(([clave, valor]) => {
+                const control = fila.querySelector(`[data-campo="${clave}"]`);
+                if (!control) {
+                    return;
+                }
+                if (control.type === "checkbox") {
+                    control.checked = Boolean(Number(valor) || valor === true);
+                } else {
+                    control.value = valor ?? "";
+                }
+            });
+            fila.querySelector(".boton-borrar").onclick = () => {
+                fila.querySelector('[data-campo="activo"]').checked = false;
+                fila.hidden = true;
+            };
+            lista.appendChild(fila);
+        };
+        elementos.forEach(añadir);
+        const nuevo = document.createElement("button");
+        nuevo.type = "button";
+        nuevo.className = "boton";
+        nuevo.textContent = "Añadir";
+        nuevo.onclick = () => añadir();
+        bloque.append(encabezado, lista, nuevo);
+        return bloque;
+    }
+
+    crearCampoLista(clave, titulo, valor) {
+        const grupo = document.createElement("div");
+        grupo.className = "campo campo-lista-simple";
+        const etiqueta = document.createElement("label");
+        etiqueta.textContent = titulo;
+        const ayuda = document.createElement("small");
+        ayuda.textContent = "Separados por comas";
+        const entrada = document.createElement("textarea");
+        entrada.name = clave;
+        entrada.value = valor || "";
+        entrada.rows = 3;
+        grupo.append(etiqueta, ayuda, entrada);
+        return grupo;
+    }
+
+    leerEditorCatalogo(bloque) {
+        return Array.from(bloque.querySelectorAll(".fila-catalogo"))
+            .map((fila, orden) => {
+                const valor = (campo) => fila.querySelector(
+                    `[data-campo="${campo}"]`
+                );
+                return {
+                    codigo: valor("codigo").value.trim(),
+                    nombre: valor("nombre").value.trim(),
+                    edad_minima: valor("edad_minima")?.value || null,
+                    edad_maxima: valor("edad_maxima")?.value || null,
+                    activo: valor("activo").checked,
+                    orden
+                };
+            })
+            .filter((elemento) => elemento.codigo && elemento.nombre);
+    }
+
+    guardar(datos, logo, catalogos) {
         const formulario = new FormData();
         formulario.append("configuracion", JSON.stringify(datos));
         if (logo) {
             formulario.append("logo", logo);
         }
-        return fetch("api/superapi.php?ruta=configuracion", {
+        const guardarConfiguracion = fetch("api/superapi.php?ruta=configuracion", {
             method: "POST",
             body: formulario
         }).then((respuesta) => respuesta.json().then((resultado) => {
@@ -197,14 +314,28 @@ class IngeriarConfiguracion {
                 throw new Error(resultado.error || "No se pudo guardar");
             }
             return resultado;
-        })).then((resultado) => {
+        }));
+        return guardarConfiguracion.then((resultado) => {
             if (!resultado.ok) {
                 throw new Error(resultado.error || "No se pudo guardar");
             }
-            document.querySelector(this.nombre).textContent =
-                datos.nombre_grupo;
-            this.aplicarConfiguracion(datos);
-            alert("Configuración guardada");
+            return fetch("api/superapi.php?ruta=catalogos", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(catalogos)
+            }).then((respuesta) => respuesta.json().then((catalogosResultado) => {
+                if (!respuesta.ok || !catalogosResultado.ok) {
+                    throw new Error(
+                        catalogosResultado.error || "No se pudieron guardar los catálogos"
+                    );
+                }
+                datos.catalogos = catalogosResultado.catalogos;
+                document.querySelector(this.nombre).textContent =
+                    datos.nombre_grupo;
+                this.aplicarConfiguracion(datos);
+                window.dispatchEvent(new CustomEvent("configuracion-actualizada"));
+                alert("Configuración guardada");
+            }));
         });
     }
 }

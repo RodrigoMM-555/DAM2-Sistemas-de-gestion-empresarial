@@ -71,6 +71,7 @@ class IngeriarCalendario {
             "sabado",
             "festival",
             "excursion",
+            "acampada",
             "campamento",
             "taller",
             "convivencia",
@@ -79,6 +80,32 @@ class IngeriarCalendario {
         return "cal-evento-" + (
             tiposConColor.includes(tipo) ? tipo : "otro"
         );
+    }
+
+    nombreTipoEvento(tipo) {
+        const etiquetas = document.documentElement.dataset
+            .nombresTiposEvento;
+        if (!etiquetas) {
+            return tipo;
+        }
+
+        try {
+            return JSON.parse(etiquetas)[tipo] || tipo;
+        } catch (error) {
+            return tipo;
+        }
+    }
+
+    nombreSeccion(codigo) {
+        try {
+            const secciones = JSON.parse(
+                document.documentElement.dataset.secciones || "[]"
+            );
+            return secciones.find((seccion) => seccion.codigo === codigo)
+                ?.nombre || codigo;
+        } catch (error) {
+            return codigo;
+        }
     }
 
     render() {
@@ -302,9 +329,11 @@ class IngeriarCalendario {
                 ["Lugar", evento.lugar],
                 ["Municipio", evento.municipio],
                 ["Provincia", evento.comunidad],
-                ["Tipo", evento.tipo],
+                ["Tipo", this.nombreTipoEvento(evento.tipo)],
                 ["Secciones convocadas", evento.convocatorias?.length
-                    ? evento.convocatorias.join(", ")
+                    ? evento.convocatorias.map((seccion) =>
+                        this.nombreSeccion(seccion)
+                    ).join(", ")
                     : "Todas"]
             ];
             datosEvento.forEach(([etiqueta, valor]) => {

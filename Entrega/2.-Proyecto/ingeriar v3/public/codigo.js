@@ -34,6 +34,14 @@ const calendario = new IngeriarCalendario({
     contenedor: "section"
 });
 
+window.addEventListener("configuracion-actualizada", () => {
+    if (vistaActual === "tabla" && tablaActual) {
+        tabla.cargar(tablaActual);
+    } else if (vistaActual === "calendario") {
+        calendario.cargar("eventos");
+    }
+});
+
 function marcarEnlaceActivo(enlace) {
     document.querySelectorAll("#entidades a")
         .forEach(function (elemento) {
@@ -114,7 +122,16 @@ function cargarEntidades() {
                         tablaActual = dato;
                         marcarEnlaceActivo(enlace);
                         vistaActual = "tabla";
-                        tabla.cargar(tablaActual);
+                        tabla.cargar(tablaActual).catch((error) => {
+                            const seccion = document.querySelector("main > section");
+                            seccion.className = "vista vista-tabla";
+                            seccion.innerHTML = "";
+                            const mensaje = document.createElement("p");
+                            mensaje.className = "aviso-error";
+                            mensaje.textContent =
+                                "No se pudo cargar " + dato + ": " + error.message;
+                            seccion.appendChild(mensaje);
+                        });
                     };
                     menu.appendChild(enlace);
                 }

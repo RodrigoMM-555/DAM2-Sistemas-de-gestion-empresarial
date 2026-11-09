@@ -1,3 +1,23 @@
+categorias_factura
+- codigo VARCHAR(50) PRIMARY KEY
+- nombre VARCHAR(100) NOT NULL
+- activo BOOLEAN NOT NULL DEFAULT TRUE
+- orden SMALLINT UNSIGNED NOT NULL DEFAULT 0
+
+tipos_evento
+- codigo VARCHAR(50) PRIMARY KEY
+- nombre VARCHAR(100) NOT NULL
+- activo BOOLEAN NOT NULL DEFAULT TRUE
+- orden SMALLINT UNSIGNED NOT NULL DEFAULT 0
+
+secciones
+- codigo VARCHAR(50) PRIMARY KEY
+- nombre VARCHAR(100) NOT NULL
+- edad_minima TINYINT UNSIGNED NULL
+- edad_maxima TINYINT UNSIGNED NULL
+- activo BOOLEAN NOT NULL DEFAULT TRUE
+- orden SMALLINT UNSIGNED NOT NULL DEFAULT 0
+
 usuarios
 - nombre VARCHAR(100) NOT NULL
 - apellidos VARCHAR(150) NOT NULL
@@ -21,7 +41,8 @@ facturas
 - concepto TEXT NOT NULL
 - precio DECIMAL(10,2) NOT NULL
 - categoria enum('envíos', 'comida', 'material', 'gasolina', 'otros', 'agua', 'luz', 'gas') NOT NULL
-- estado VARCHAR(50) NOT NULL
+- estado ENUM('pendiente', 'pagada', 'rechazada') NOT NULL
+  DEFAULT 'pendiente'
 - imagen_factura VARCHAR(255) NULL
 
 usuarios_educandos
@@ -42,7 +63,7 @@ eventos
 
 eventos_secciones
 - id_evento INT UNSIGNED NOT NULL REFERENCES eventos(id) ON DELETE CASCADE
-- seccion ENUM('colonia', 'manada', 'tropa', 'posta', 'rutas') NOT NULL
+- seccion VARCHAR(50) NOT NULL
 - PRIMARY KEY (id_evento, seccion)
 
 educandos_asistencias

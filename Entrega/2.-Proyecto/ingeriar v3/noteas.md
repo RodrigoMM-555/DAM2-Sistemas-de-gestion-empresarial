@@ -79,6 +79,25 @@ Desde la pantalla de administración se pueden cambiar:
 - tamaño máximo y formatos de archivos;
 - categorías de facturas, tipos de evento y secciones.
 
+Los tipos de evento se gestionan separando el identificador interno del nombre
+visible. Por ejemplo, `sabado` puede mostrarse como `Sábado` y seguir siendo
+el mismo valor para colores, filtros y gráficas. La configuración permite
+Los nombres visibles se editan desde los catálogos `tipos_evento`,
+`secciones` y `categorias_factura`. Los formatos de entrega son una preferencia
+de archivos, mientras que las categorías de factura son un catálogo dinámico
+independiente. El estado de una factura no es un catálogo: es un `ENUM` cerrado
+con los valores `pendiente`, `pagada` y `rechazada`.
+No se deben borrar identificadores internos usados por eventos antiguos: si se
+quiere dejar de ofrecer uno nuevo, se puede ocultar en una futura mejora, pero
+los registros existentes deben seguir siendo editables.
+
+Los tipos de evento y las secciones son catálogos administrables. Cada uno
+conserva un código interno estable y tiene nombre visible, orden y estado
+activo. Las secciones también guardan un intervalo de edades para calcular
+automáticamente la sección de cada educando. Para bases ya existentes hay que
+ejecutar `server/data/migraciones/2025-02-catalogos-eventos-secciones.sql`.
+Retirar un elemento lo archiva (`activo = false`) para conservar históricos.
+
 El servidor conserva los valores existentes y valida los booleanos, el tamaño
 máximo y las opciones de archivo antes de escribir el archivo. Las listas se
 guardan como texto separado por comas para que sean fáciles de editar; su

@@ -8,6 +8,18 @@ class IngeriarDashboard {
         this.exportacion = exportacion;
     }
 
+    nombreSeccion(codigo) {
+        try {
+            const secciones = JSON.parse(
+                document.documentElement.dataset.secciones || "[]"
+            );
+            return secciones.find((seccion) => seccion.codigo === codigo)
+                ?.nombre || codigo;
+        } catch (error) {
+            return codigo;
+        }
+    }
+
     async render() {
         this.contenedor.innerHTML =
             '<p class="vacio">Cargando dashboard...</p>';
@@ -218,7 +230,7 @@ class IngeriarDashboard {
         Object.entries(datos.secciones || {}).forEach(([seccion, estados]) => {
             const fila = document.createElement("tr");
             fila.innerHTML = "<td></td><td></td><td></td><td></td>";
-            fila.children[0].textContent = seccion;
+            fila.children[0].textContent = this.nombreSeccion(seccion);
             fila.children[1].textContent = estados.si || 0;
             fila.children[2].textContent = estados.no || 0;
             fila.children[3].textContent = estados.pendiente || 0;

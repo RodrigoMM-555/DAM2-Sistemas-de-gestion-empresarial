@@ -543,6 +543,97 @@ section h2{
     min-width:0;
 }
 
+.vista-configuracion{
+    width:100%;
+}
+
+.vista-configuracion > .formulario{
+    width:100%;
+    max-width:none;
+    box-sizing:border-box;
+    grid-template-columns:repeat(12,minmax(0,1fr));
+    gap:0 24px;
+    padding:28px;
+}
+
+.vista-configuracion > .formulario > .titulo-configuracion{
+    grid-column:1 / -1;
+    margin-top:22px;
+}
+
+.vista-configuracion > .formulario > .titulo-configuracion:first-of-type{
+    margin-top:0;
+}
+
+.vista-configuracion > .formulario > .campo{
+    grid-column:span 4;
+}
+
+.vista-configuracion > .formulario > .bloque-catalogo{
+    grid-column:1 / -1;
+}
+
+.bloque-listas-simples{
+    grid-column:1 / -1;
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:0 24px;
+    padding:4px 0 8px;
+}
+
+.campo-lista-simple{
+    margin-bottom:12px;
+}
+
+.campo-lista-simple small{
+    color:var(--color_secundario);
+    font-size:12px;
+}
+
+.bloque-catalogo{
+    margin-top:22px;
+    padding-top:6px;
+}
+
+.lista-catalogo{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.fila-catalogo{
+    display:grid;
+    grid-template-columns:minmax(130px,1fr) minmax(180px,2fr)
+        110px 110px auto auto;
+    align-items:center;
+    gap:10px;
+    padding:12px;
+    border:1px solid var(--color_borde);
+    border-radius:var(--radio);
+    background:var(--color_fondo);
+}
+
+.fila-catalogo input:not([type="checkbox"]){
+    width:100%;
+    box-sizing:border-box;
+}
+
+.fila-catalogo label{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    white-space:nowrap;
+}
+
+.fila-catalogo input[type="checkbox"]{
+    width:17px;
+    height:17px;
+}
+
+.fila-catalogo[hidden]{
+    display:none;
+}
+
 .vista-superficie{
     border:1px solid var(--color_borde);
     border-radius:var(--radio);
@@ -830,6 +921,24 @@ table tbody tr[class^="fila-seccion-"]:hover{
         grid-template-columns:1fr;
         gap:0;
         padding:18px;
+    }
+
+    .vista-configuracion > .formulario{
+        grid-template-columns:1fr;
+        padding:18px;
+    }
+
+    .vista-configuracion > .formulario > .campo,
+    .vista-configuracion > .formulario > .bloque-catalogo{
+        grid-column:1;
+    }
+
+    .bloque-listas-simples{
+        grid-template-columns:1fr;
+    }
+
+    .fila-catalogo{
+        grid-template-columns:1fr;
     }
 
     .campo-secciones,
