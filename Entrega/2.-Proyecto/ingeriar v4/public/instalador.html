@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Instalador de Ingeriar</title>
+</head>
+<body>
+    <h1>Instalador</h1>
+    <p>
+        Escribe una tabla sin guion y sus campos con el formato
+        <code>- nombre TIPO RESTRICCIONES</code>.
+    </p>
+    <p>
+        Ejemplo: <code>- email TEXT NOT NULL UNIQUE</code>.
+        Si no indicas tipo, se utilizará <code>TEXT</code>.
+    </p>
+    <form action="api/instalar.php" method="POST">
+        <label for="modelo">Modelo de datos</label>
+        <br>
+        <textarea name="modelo" id="modelo" rows="20" cols="80" required></textarea>
+        <br>
+        <button type="submit">Crear base de datos</button>
+    </form>
+</body>
+</html>
